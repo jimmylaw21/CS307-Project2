@@ -1,6 +1,6 @@
 create table if not exists enterprise
 (
-    id serial primary key ,
+    id integer primary key ,
     name       varchar(50) unique not null,
     country           varchar(30) not null,
     city              varchar(12)         ,
@@ -10,13 +10,13 @@ create table if not exists enterprise
 
 create table if not exists center
 (
-    id serial primary key ,
+    id integer primary key ,
     supply_center varchar(20) unique not null
 );
 
 create table if not exists staff
 (
-    id serial primary key ,
+    id integer primary key ,
     name            varchar(20) not null,
     age             integer     not null,
     gender          varchar(8)  not null,
@@ -27,7 +27,7 @@ create table if not exists staff
 );
 create table if not exists model
 (
-    id serial primary key ,
+    id integer primary key ,
     number          varchar(9)  not null,
     model           varchar(70) unique not null,
     name            varchar(70) not null,
