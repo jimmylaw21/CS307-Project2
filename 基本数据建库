@@ -23,7 +23,7 @@ create table if not exists staff
     number          integer unique not null,
     supply_center   varchar(20) not null,
     mobile_phone    varchar(12) not null,
-    type            varchar(15) not null
+    type            varchar(18) not null
 );
 create table if not exists model
 (
