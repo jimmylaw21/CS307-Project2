@@ -21,7 +21,7 @@ create table if not exists staff
     age             integer     not null,
     gender          varchar(8)  not null,
     number          integer unique not null,
-    supply_center   varchar(20) not null,
+    supply_center   varchar(50) not null,
     mobile_phone    varchar(12) not null,
     type            varchar(18) not null
 );
