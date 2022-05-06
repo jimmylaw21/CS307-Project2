@@ -33,3 +33,44 @@ create table if not exists model
     name            varchar(70) not null,
     unit_price      integer     not null
 );
+create table if not exists stockIn
+(
+    id              integer primary key not null,
+    supply_center   varchar(50) not null,
+    model           varchar(70) not null,
+    supply_staff    integer not null,
+    date            varchar(12) not null,
+    purchase_price  integer not null,
+    quantity        integer not null,
+    constraint fk_stockIn_center foreign key (supply_center) references
+center(name),
+    constraint fk_stockIn_model foreign key (model) references
+model(model),
+    constraint fk_stockIn_staff foreign key (supply_staff) references
+staff(number)
+);
+create table if not exists contract(
+    id               serial primary key,
+    contract         varchar(10) unique not null,
+    contract_manager integer not null,
+    contract_date    varchar(10) not null,
+    estimated_date   varchar(10) not null,
+    lodgement_date   varchar(10) not null,
+    contract_type    varchar(12) not null
+);
+create table if not exists orders(
+    id               serial primary key,
+    contract         varchar(10) not null,
+    enterprise       varchar(50) not null,
+    product_model    varchar(70) not null,
+    quantity         integer not null,
+    salesman_number  integer not null ,
+    constraint fk_orders_enterprise foreign key (enterprise) references
+enterprise(name),
+    constraint fk_orders_model foreign key (product_model) references
+model(model),
+    constraint fk_orders_staff foreign key (salesman_number) references
+staff(number),
+    constraint fk_orders_contract foreign key (contract) references
+contract(contract)
+);
