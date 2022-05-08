@@ -44,12 +44,18 @@ public class OriginalDataLoader {
             +"values(?,?,?,?,?,?,?)";
 
     private static String ordersLoader =
-            "insert into orders(contract,enterprise,product_model,quantity,salesman_number)"
-                    +"values(?,?,?,?,?)";
+            "insert into orders(contract,product_model,quantity,salesman_number,estimated_date,lodgement_date)"
+                    +"values(?,?,?,?,?,?)";
 
     private static String contractLoader =
-            "insert into contract(contract,contract_manager,contract_date,estimated_date,lodgement_date,contract_type)"
-                    +"values(?,?,?,?,?,?)";
+            "insert into contract(contract,enterprise,contract_manager,contract_date,contract_type)"
+                    +"values(?,?,?,?,?)";
+    private static String updateOrders =
+            "update orders set contract = ?, product_model = ?,quantity = ?, " +
+                    "salesman_number = ?, estimated_date = ?,lodgement_date = ?" +
+                    "where contract = ? and product_model = ?";
+    private static String deleteOrders =
+            "delete from orders where contract = ? and salesman_number = ?";
     /**
      * 打开数据库的方法
      */
@@ -88,6 +94,8 @@ public class OriginalDataLoader {
             stmt5 = con.prepareStatement(stockInLoader);
             stmt6 = con.prepareStatement(ordersLoader);
             stmt7 = con.prepareStatement(contractLoader);
+            stmt8 = con.prepareStatement(updateOrders);
+            stmt9 = con.prepareStatement(deleteOrders);
         } catch (SQLException e) {
             System.err.println("Insert statement failed");
             System.err.println(e.getMessage());
@@ -121,6 +129,12 @@ public class OriginalDataLoader {
                 }
                 if (stmt7 != null) {
                     stmt7.close();
+                }
+                if (stmt8 != null) {
+                    stmt8.close();
+                }
+                if (stmt9 != null) {
+                    stmt9.close();
                 }
                 con.close();
                 con = null;
@@ -201,30 +215,55 @@ public class OriginalDataLoader {
         }
     }
 
-    private static void ordersLoadData(String contract,String enterprise,String product_model,
-                                        int quantity,int salesman_number)
+    private static void ordersLoadData(String contract,String product_model,int quantity,
+                                       int salesman_number,String estimated_date,
+                                       String lodgement_date)
             throws SQLException {
         if (con != null) {
             stmt6.setString(1, contract);
-            stmt6.setString(2, enterprise);
-            stmt6.setString(3, product_model);
-            stmt6.setInt(4, quantity);
-            stmt6.setInt(5, salesman_number);
+            stmt6.setString(2, product_model);
+            stmt6.setInt(3, quantity);
+            stmt6.setInt(4, salesman_number);
+            stmt6.setString(5, estimated_date);
+            stmt6.setString(6, lodgement_date);
             stmt6.addBatch();
         }
     }
 
-    private static void contractLoadData(String contract,int contract_manager, String contract_date,String estimated_date,
-                                           String lodgement_date,String contract_type)
+    private static void contractLoadData(String contract,String enterprise,int contract_manager,
+                                         String contract_date,String contract_type)
             throws SQLException {
         if (con != null) {
             stmt7.setString(1, contract);
-            stmt7.setInt(2, contract_manager);
-            stmt7.setString(3, contract_date);
-            stmt7.setString(4, estimated_date);
-            stmt7.setString(5, lodgement_date);
-            stmt7.setString(6, contract_type);
+            stmt7.setString(2, enterprise);
+            stmt7.setInt(3, contract_manager);
+            stmt7.setString(4, contract_date);
+            stmt7.setString(5, contract_type);
             stmt7.addBatch();
+        }
+    }
+
+    private static void setUpdateOrders(String contract,String product_model,int quantity,
+                                        int salesman_number,String estimate_delivery_date,String lodgement_date)
+            throws SQLException {
+        if (con != null) {
+            stmt8.setString(1, contract);
+            stmt8.setString(2, product_model);
+            stmt8.setInt(3, quantity);
+            stmt8.setInt(4, salesman_number);
+            stmt8.setString(5, estimate_delivery_date);
+            stmt8.setString(6, lodgement_date);
+            stmt8.setString(7, contract);
+            stmt8.setString(8, product_model);
+            stmt8.addBatch();
+        }
+    }
+    private static void setDeleteOrders(String contract,int salesman)
+            throws SQLException {
+        if (con != null) {
+            stmt9.setString(1, contract);
+            stmt9.setInt(2, salesman);
+            stmt9.addBatch();
         }
     }
 
@@ -281,6 +320,161 @@ public class OriginalDataLoader {
         }
         return num;
     }
+
+    public static int findStockQuantity(String contract, String model) {
+        int num = 0;
+        String sql = "select quantity from stockIn s\n" +
+                "    join enterprise e on s.supply_center = e.supply_center\n" +
+                "    join contract c on c.enterprise = e.name\n" +
+                "where c.contract = ? and s.model = ? ;";
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement(sql);
+            preparedStatement.setString(1,contract);
+            preparedStatement.setString(2,model);
+            resultSet = preparedStatement.executeQuery();
+            while(resultSet.next()){
+                num = Integer.parseInt((String.format(resultSet.getString("quantity"))));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return num;
+    }
+
+    public static int findOrderSalesman(String contract, String model){
+        int num = 0;
+        String sql = "select salesman_number from orders " +
+                "where contract = ? and product_model = ? ;";
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement(sql);
+            preparedStatement.setString(1,contract);
+            preparedStatement.setString(2,model);
+            resultSet = preparedStatement.executeQuery();
+            while(resultSet.next()){
+                num = Integer.parseInt((String.format(resultSet.getString("salesman_number"))));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return num;
+    }
+
+    public static String findEnterpriseCenter(String enterprise){
+        String sb ="";
+        String sql = "select supply_center from enterprise " +
+                "where name = ? ;";
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement(sql);
+            preparedStatement.setString(1,enterprise);
+            resultSet = preparedStatement.executeQuery();
+            while(resultSet.next()){
+                sb = (String.format(resultSet.getString("salesman_number")));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sb;
+    }
+
+    public static String findCenterByContract(String contract){
+        String sb ="";
+        String sql = "select supply_center from enterprise e " +
+                "join contract c on e.name = c.enterprise " +
+                "where c.contract = ? ;";
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement(sql);
+            preparedStatement.setString(1,contract);
+            resultSet = preparedStatement.executeQuery();
+            while(resultSet.next()){
+                sb = (String.format(resultSet.getString("supply_center")));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sb;
+    }
+
+    public static String findOrderModelByContractSalesman(String contract,int salesman){
+        String sb ="";
+        String sql = "select product_model from orders " +
+                "where contract = ? and salesman_number = ?";
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement(sql);
+            preparedStatement.setString(1,contract);
+            preparedStatement.setInt(2,salesman);
+            resultSet = preparedStatement.executeQuery();
+            while(resultSet.next()){
+                sb = (String.format(resultSet.getString("product_model")));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sb;
+    }
+
+    public static int findOrderQuantity(String contract, String model){
+        int num = 0;
+        String sql = "select quantity from orders " +
+                "where contract = ? and product_model = ? ;";
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement(sql);
+            preparedStatement.setString(1,contract);
+            preparedStatement.setString(2,model);
+            resultSet = preparedStatement.executeQuery();
+            while(resultSet.next()){
+                num = Integer.parseInt((String.format(resultSet.getString("quantity"))));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return num;
+    }
+
+    public static List findOrderSalesmanByContract(String contract){
+        List num = new ArrayList();
+        String sql = "select salesman_number from orders " +
+                "where contract = ?;";
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement(sql);
+            preparedStatement.setString(1,contract);
+            resultSet = preparedStatement.executeQuery();
+            while(resultSet.next()){
+                num.add(Integer.parseInt((String.format(resultSet.getString("salesman_number")))));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return num;
+    }
+
+
+    public static void UpdateStockIn(String center, String model,int Ivalue, int Dvalue){
+        String sql = "update StockIn set quantity = " + (Ivalue+Dvalue) +
+                "where supply_center = ? and model = ?";
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement(sql);
+            preparedStatement.setString(1,center);
+            preparedStatement.setString(2,model);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void deleteOrder (String contract,String product_model,int salesman_number){
+        String sql = "delete from orders where " +
+                "contract = ? and product_model = ? and salesman_number = ?";
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement(sql);
+            preparedStatement.setString(1,contract);
+            preparedStatement.setString(2,product_model);
+            preparedStatement.setInt(3,salesman_number);
+            preparedStatement.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public static String findAllCenter() {
         StringBuilder sb = new StringBuilder();
@@ -372,389 +566,389 @@ public class OriginalDataLoader {
         /**
          * staff表导入数据
          */
-//        try (BufferedReader conf
-//                = new BufferedReader(new FileReader(propertyURL.getPath()))) {
-//          prop.load(conf);
-//        } catch (IOException e) {
-//           // Ignore
-//           System.err.println("No configuration file (loader.cnf) found");
-//        }
-//        try (BufferedReader infile
-//                     = new BufferedReader(new FileReader("staff.csv"))) {
-//            long     start;
-//            long     end;
-//            String   line;
-//            String[] parts;
-//            int      id;
-//            String   name;
-//            int      age;
-//            String   gender;
-//            int      number;
-//            String   supply_center;
-//            String   mobile_phone;
-//            String   type;
-//            int      cnt = 0;
-//
-//            // Empty target table
-//            openDB(prop.getProperty("host"), prop.getProperty("database"),
-//                    prop.getProperty("user"), prop.getProperty("password"));
-//            Statement stmt0;
-//            if (con != null) {
-//                stmt0 = con.createStatement();
-//                stmt0.execute("truncate table enterprise");
-//                stmt0.execute("truncate table center");
-//                stmt0.execute("truncate table staff");
-//                stmt0.execute("truncate table model");
-//                stmt0.close();
-//            }
-//            closeDB();
-//
-//
-//            // Fill target table
-//            start = System.currentTimeMillis();
-//            openDB(prop.getProperty("host"), prop.getProperty("database"),
-//                    prop.getProperty("user"), prop.getProperty("password"));
-//            while ((line = infile.readLine()) != null) {
-//                parts = line.replace("\"Hong Kong, Macao and Taiwan regions of China\"","\"Hong Kong Macao and Taiwan regions of China\"").split(",");
-//                if (parts.length > 1) {
-//                    id = Integer.parseInt(parts[0]);
-//                    name = parts[1];
-//                    age = Integer.parseInt(parts[2]);
-//                    gender = parts[3];
-//                    number = Integer.parseInt(parts[4]);
-//                    supply_center = parts[5];
-//                    mobile_phone = parts[6];
-//                    type = parts[7];
-//                    staffLoadData(id,name,age,gender,number,supply_center,mobile_phone,type);
-//                    cnt++;
-//                    if (cnt % BATCH_SIZE == 0) {
-//                        stmt1.executeBatch();
-//                        stmt1.clearBatch();
-//                    }
-//                }
-//            }
-//            if (cnt % BATCH_SIZE != 0) {
-//                stmt1.executeBatch();
-//            }
-//            con.commit();
-//            stmt1.close();
-//            closeDB();
-//            end = System.currentTimeMillis();
-//            System.out.println(cnt + " records successfully loaded\n");
-//            System.out.println("Loading speed : "
-//                    + (cnt * 1000)/(end - start)
-//                    + " records/s");
-//
-//
-//        } catch (SQLException se) {
-//            System.err.println("SQL error: " + se.getMessage());
-//            try {
-//                con.rollback();
-//                stmt1.close();
-//            } catch (Exception e2) {
-//            }
-//            closeDB();
-//            System.exit(1);
-//        } catch (IOException e) {
-//            System.err.println("Fatal error: " + e.getMessage());
-//            try {
-//                con.rollback();
-//                stmt1.close();
-//            } catch (Exception e2) {
-//            }
-//            closeDB();
-//            System.exit(1);
-//        }
+        try (BufferedReader conf
+                = new BufferedReader(new FileReader(propertyURL.getPath()))) {
+          prop.load(conf);
+        } catch (IOException e) {
+           // Ignore
+           System.err.println("No configuration file (loader.cnf) found");
+        }
+        try (BufferedReader infile
+                     = new BufferedReader(new FileReader("staff.csv"))) {
+            long     start;
+            long     end;
+            String   line;
+            String[] parts;
+            int      id;
+            String   name;
+            int      age;
+            String   gender;
+            int      number;
+            String   supply_center;
+            String   mobile_phone;
+            String   type;
+            int      cnt = 0;
+
+            // Empty target table
+            openDB(prop.getProperty("host"), prop.getProperty("database"),
+                    prop.getProperty("user"), prop.getProperty("password"));
+            Statement stmt0;
+            if (con != null) {
+                stmt0 = con.createStatement();
+                stmt0.execute("truncate table enterprise");
+                stmt0.execute("truncate table center");
+                stmt0.execute("truncate table staff");
+                stmt0.execute("truncate table model");
+                stmt0.close();
+            }
+            closeDB();
+
+
+            // Fill target table
+            start = System.currentTimeMillis();
+            openDB(prop.getProperty("host"), prop.getProperty("database"),
+                    prop.getProperty("user"), prop.getProperty("password"));
+            while ((line = infile.readLine()) != null) {
+                parts = line.replace("\"Hong Kong, Macao and Taiwan regions of China\"","\"Hong Kong Macao and Taiwan regions of China\"").split(",");
+                if (parts.length > 1) {
+                    id = Integer.parseInt(parts[0]);
+                    name = parts[1];
+                    age = Integer.parseInt(parts[2]);
+                    gender = parts[3];
+                    number = Integer.parseInt(parts[4]);
+                    supply_center = parts[5];
+                    mobile_phone = parts[6];
+                    type = parts[7];
+                    staffLoadData(id,name,age,gender,number,supply_center,mobile_phone,type);
+                    cnt++;
+                    if (cnt % BATCH_SIZE == 0) {
+                        stmt1.executeBatch();
+                        stmt1.clearBatch();
+                    }
+                }
+            }
+            if (cnt % BATCH_SIZE != 0) {
+                stmt1.executeBatch();
+            }
+            con.commit();
+            stmt1.close();
+            closeDB();
+            end = System.currentTimeMillis();
+            System.out.println(cnt + " records successfully loaded\n");
+            System.out.println("Loading speed : "
+                    + (cnt * 1000)/(end - start)
+                    + " records/s");
+
+
+        } catch (SQLException se) {
+            System.err.println("SQL error: " + se.getMessage());
+            try {
+                con.rollback();
+                stmt1.close();
+            } catch (Exception e2) {
+            }
+            closeDB();
+            System.exit(1);
+        } catch (IOException e) {
+            System.err.println("Fatal error: " + e.getMessage());
+            try {
+                con.rollback();
+                stmt1.close();
+            } catch (Exception e2) {
+            }
+            closeDB();
+            System.exit(1);
+        }
     /**
      * model表导入数据
      */
-//        try (BufferedReader infile
-//                     = new BufferedReader(new FileReader("model.csv"))) {
-//            long     start;
-//            long     end;
-//            String   line;
-//            String[] parts;
-//            int      id;
-//            String   number;
-//            String   model;
-//            String   name;
-//            int   unit_price;
-//            int      cnt = 0;
-//
-//            // Fill target table
-//            start = System.currentTimeMillis();
-//            openDB(prop.getProperty("host"), prop.getProperty("database"),
-//                    prop.getProperty("user"), prop.getProperty("password"));
-//            while ((line = infile.readLine()) != null) {
-//                parts = line.split(",");
-//                if (parts.length > 1) {
-//                    id = Integer.parseInt(parts[0]);
-//                    number = parts[1];
-//                    model = parts[2];
-//                    name = parts[3];
-//                    unit_price = Integer.parseInt(parts[4]);
-//                    modelLoadData(id,number,model,name,unit_price);
-//                    cnt++;
-//                    if (cnt % BATCH_SIZE == 0) {
-//                        stmt2.executeBatch();
-//                        stmt2.clearBatch();
-//                    }
-//                }
-//            }
-//            if (cnt % BATCH_SIZE != 0) {
-//                stmt2.executeBatch();
-//            }
-//            con.commit();
-//            stmt2.close();
-//            closeDB();
-//            end = System.currentTimeMillis();
-//            System.out.println(cnt + " records successfully loaded\n");
-//            System.out.println("Loading speed : "
-//                    + (cnt * 1000)/(end - start)
-//                    + " records/s");
-//
-//
-//        } catch (SQLException se) {
-//            System.err.println("SQL error: " + se.getMessage());
-//            try {
-//                con.rollback();
-//                stmt2.close();
-//            } catch (Exception e2) {
-//            }
-//            closeDB();
-//            System.exit(1);
-//        } catch (IOException e) {
-//            System.err.println("Fatal error: " + e.getMessage());
-//            try {
-//                con.rollback();
-//                stmt2.close();
-//            } catch (Exception e2) {
-//            }
-//            closeDB();
-//            System.exit(1);
-//        }
+        try (BufferedReader infile
+                     = new BufferedReader(new FileReader("model.csv"))) {
+            long     start;
+            long     end;
+            String   line;
+            String[] parts;
+            int      id;
+            String   number;
+            String   model;
+            String   name;
+            int   unit_price;
+            int      cnt = 0;
+
+            // Fill target table
+            start = System.currentTimeMillis();
+            openDB(prop.getProperty("host"), prop.getProperty("database"),
+                    prop.getProperty("user"), prop.getProperty("password"));
+            while ((line = infile.readLine()) != null) {
+                parts = line.split(",");
+                if (parts.length > 1) {
+                    id = Integer.parseInt(parts[0]);
+                    number = parts[1];
+                    model = parts[2];
+                    name = parts[3];
+                    unit_price = Integer.parseInt(parts[4]);
+                    modelLoadData(id,number,model,name,unit_price);
+                    cnt++;
+                    if (cnt % BATCH_SIZE == 0) {
+                        stmt2.executeBatch();
+                        stmt2.clearBatch();
+                    }
+                }
+            }
+            if (cnt % BATCH_SIZE != 0) {
+                stmt2.executeBatch();
+            }
+            con.commit();
+            stmt2.close();
+            closeDB();
+            end = System.currentTimeMillis();
+            System.out.println(cnt + " records successfully loaded\n");
+            System.out.println("Loading speed : "
+                    + (cnt * 1000)/(end - start)
+                    + " records/s");
+
+
+        } catch (SQLException se) {
+            System.err.println("SQL error: " + se.getMessage());
+            try {
+                con.rollback();
+                stmt2.close();
+            } catch (Exception e2) {
+            }
+            closeDB();
+            System.exit(1);
+        } catch (IOException e) {
+            System.err.println("Fatal error: " + e.getMessage());
+            try {
+                con.rollback();
+                stmt2.close();
+            } catch (Exception e2) {
+            }
+            closeDB();
+            System.exit(1);
+        }
     /**
      * enterprise表导入数据
      */
-//        try (BufferedReader infile
-//                     = new BufferedReader(new FileReader("enterprise.csv"))) {
-//            long     start;
-//            long     end;
-//            String   line;
-//            String[] parts;
-//            int      id;
-//            String   name;
-//            String   country;
-//            String   city;
-//            String   supply_center;
-//            String   industry;
-//            int      cnt = 0;
-//
-//            // Fill target table
-//            start = System.currentTimeMillis();
-//            openDB(prop.getProperty("host"), prop.getProperty("database"),
-//                    prop.getProperty("user"), prop.getProperty("password"));
-//            while ((line = infile.readLine()) != null) {
-//                parts = line.split(",");
-//                if (parts.length > 1) {
-//                    id = Integer.parseInt(parts[0]);
-//                    name = parts[1];
-//                    country = parts[2];
-//                    city = parts[3];
-//                    supply_center = parts[4];
-//                    industry = parts[5];
-//                    enterpriseLoadData(id,name,country,city,supply_center,industry);
-//                    cnt++;
-//                    if (cnt % BATCH_SIZE == 0) {
-//                        stmt3.executeBatch();
-//                        stmt3.clearBatch();
-//                    }
-//                }
-//            }
-//            if (cnt % BATCH_SIZE != 0) {
-//                stmt3.executeBatch();
-//            }
-//            con.commit();
-//            stmt3.close();
-//            closeDB();
-//            end = System.currentTimeMillis();
-//            System.out.println(cnt + " records successfully loaded\n");
-//            System.out.println("Loading speed : "
-//                    + (cnt * 1000)/(end - start)
-//                    + " records/s");
-//
-//
-//        } catch (SQLException se) {
-//            System.err.println("SQL error: " + se.getMessage());
-//            try {
-//                con.rollback();
-//                stmt3.close();
-//            } catch (Exception e2) {
-//            }
-//            closeDB();
-//            System.exit(1);
-//        } catch (IOException e) {
-//            System.err.println("Fatal error: " + e.getMessage());
-//            try {
-//                con.rollback();
-//                stmt3.close();
-//            } catch (Exception e2) {
-//            }
-//            closeDB();
-//            System.exit(1);
-//        }
+        try (BufferedReader infile
+                     = new BufferedReader(new FileReader("enterprise.csv"))) {
+            long     start;
+            long     end;
+            String   line;
+            String[] parts;
+            int      id;
+            String   name;
+            String   country;
+            String   city;
+            String   supply_center;
+            String   industry;
+            int      cnt = 0;
+
+            // Fill target table
+            start = System.currentTimeMillis();
+            openDB(prop.getProperty("host"), prop.getProperty("database"),
+                    prop.getProperty("user"), prop.getProperty("password"));
+            while ((line = infile.readLine()) != null) {
+                parts = line.replace("Hong Kong, Macao and Taiwan regions of China","Hong Kong Macao and Taiwan regions of China").split(",");
+                if (parts.length > 1) {
+                    id = Integer.parseInt(parts[0]);
+                    name = parts[1];
+                    country = parts[2];
+                    city = parts[3];
+                    supply_center = parts[4];
+                    industry = parts[5];
+                    enterpriseLoadData(id,name,country,city,supply_center,industry);
+                    cnt++;
+                    if (cnt % BATCH_SIZE == 0) {
+                        stmt3.executeBatch();
+                        stmt3.clearBatch();
+                    }
+                }
+            }
+            if (cnt % BATCH_SIZE != 0) {
+                stmt3.executeBatch();
+            }
+            con.commit();
+            stmt3.close();
+            closeDB();
+            end = System.currentTimeMillis();
+            System.out.println(cnt + " records successfully loaded\n");
+            System.out.println("Loading speed : "
+                    + (cnt * 1000)/(end - start)
+                    + " records/s");
+
+
+        } catch (SQLException se) {
+            System.err.println("SQL error: " + se.getMessage());
+            try {
+                con.rollback();
+                stmt3.close();
+            } catch (Exception e2) {
+            }
+            closeDB();
+            System.exit(1);
+        } catch (IOException e) {
+            System.err.println("Fatal error: " + e.getMessage());
+            try {
+                con.rollback();
+                stmt3.close();
+            } catch (Exception e2) {
+            }
+            closeDB();
+            System.exit(1);
+        }
     /**
     * center表导入数据
     */
-//        try (BufferedReader infile
-//                     = new BufferedReader(new FileReader("center.csv"))) {
-//            long     start;
-//            long     end;
-//            String   line;
-//            String[] parts;
-//            int      id;
-//            String   name;
-//            int      cnt = 0;
-//
-//            // Fill target table
-//            start = System.currentTimeMillis();
-//            openDB(prop.getProperty("host"), prop.getProperty("database"),
-//                    prop.getProperty("user"), prop.getProperty("password"));
-//            while ((line = infile.readLine()) != null) {
-//                parts = line.replace("\"Hong Kong, Macao and Taiwan regions of China\"","\"Hong Kong Macao and Taiwan regions of China\"").split(",");
-//                if (parts.length > 1) {
-//                    id = Integer.parseInt(parts[0]);
-//                    name = parts[1];
-//                    centerLoadData(id,name);
-//                    cnt++;
-//                    if (cnt % BATCH_SIZE == 0) {
-//                        stmt4.executeBatch();
-//                        stmt4.clearBatch();
-//                    }
-//                }
-//            }
-//            if (cnt % BATCH_SIZE != 0) {
-//                stmt4.executeBatch();
-//            }
-//            con.commit();
-//            stmt4.close();
-//            closeDB();
-//            end = System.currentTimeMillis();
-//            System.out.println(cnt + " records successfully loaded\n");
-//            System.out.println("Loading speed : "
-//                    + (cnt * 1000)/(end - start)
-//                    + " records/s");
-//
-//
-//        } catch (SQLException se) {
-//            System.err.println("SQL error: " + se.getMessage());
-//            try {
-//                con.rollback();
-//                stmt4.close();
-//            } catch (Exception e2) {
-//            }
-//            closeDB();
-//            System.exit(1);
-//        } catch (IOException e) {
-//            System.err.println("Fatal error: " + e.getMessage());
-//            try {
-//                con.rollback();
-//                stmt4.close();
-//            } catch (Exception e2) {
-//            }
-//            closeDB();
-//            System.exit(1);
-//        }
+        try (BufferedReader infile
+                     = new BufferedReader(new FileReader("center.csv"))) {
+            long     start;
+            long     end;
+            String   line;
+            String[] parts;
+            int      id;
+            String   name;
+            int      cnt = 0;
+
+            // Fill target table
+            start = System.currentTimeMillis();
+            openDB(prop.getProperty("host"), prop.getProperty("database"),
+                    prop.getProperty("user"), prop.getProperty("password"));
+            while ((line = infile.readLine()) != null) {
+                parts = line.replace("\"Hong Kong, Macao and Taiwan regions of China\"","\"Hong Kong Macao and Taiwan regions of China\"").split(",");
+                if (parts.length > 1) {
+                    id = Integer.parseInt(parts[0]);
+                    name = parts[1];
+                    centerLoadData(id,name);
+                    cnt++;
+                    if (cnt % BATCH_SIZE == 0) {
+                        stmt4.executeBatch();
+                        stmt4.clearBatch();
+                    }
+                }
+            }
+            if (cnt % BATCH_SIZE != 0) {
+                stmt4.executeBatch();
+            }
+            con.commit();
+            stmt4.close();
+            closeDB();
+            end = System.currentTimeMillis();
+            System.out.println(cnt + " records successfully loaded\n");
+            System.out.println("Loading speed : "
+                    + (cnt * 1000)/(end - start)
+                    + " records/s");
+
+
+        } catch (SQLException se) {
+            System.err.println("SQL error: " + se.getMessage());
+            try {
+                con.rollback();
+                stmt4.close();
+            } catch (Exception e2) {
+            }
+            closeDB();
+            System.exit(1);
+        } catch (IOException e) {
+            System.err.println("Fatal error: " + e.getMessage());
+            try {
+                con.rollback();
+                stmt4.close();
+            } catch (Exception e2) {
+            }
+            closeDB();
+            System.exit(1);
+        }
     /**
      * stockIn表导入数据
      */
-//        try (BufferedReader infile
-//                     = new BufferedReader(new FileReader("task1_in_stoke_test_data_publish.csv"))) {
-//            long     start;
-//            long     end;
-//            String   line;
-//            String[] parts;
-//        int      id;
-//        String   supply_center;
-//        String   product_model;
-//        int      supply_staff;
-//        String   date;
-//        int      purchase_price;
-//        int      quantity;
-//            int      cnt = 0;
-//
-//            // Fill target table
-//            start = System.currentTimeMillis();
-//            openDB(prop.getProperty("host"), prop.getProperty("database"),
-//                    prop.getProperty("user"), prop.getProperty("password"));
-//
-//            String   findAllCenter = findAllCenter();
-//            String   findAllModel = findAllModel();
-//            String   findAllStaff = findAllStaff();
-//
-//            while ((line = infile.readLine()) != null) {
-//                parts = line.replace("Hong Kong, Macao and Taiwan regions of China","Hong Kong Macao and Taiwan regions of China").split(",");
-//                if (parts.length > 1) {
-//                    if (findAllCenter.contains(parts[1]) &&
-//
-//                            parts[1].equals(findCenterByStaff(Integer.parseInt(parts[3]))) &&
-//
-//                            "Supply Staff".equals(findTypeByStaff(Integer.parseInt(parts[3]))) &&
-//
-//                            findAllModel.contains(parts[2]) &&
-//
-//                            findAllStaff.contains(parts[3])) {
-//
-//        id = Integer.parseInt(parts[0]);
-//        supply_center = parts[1];
-//        product_model = parts[2];
-//        supply_staff = Integer.parseInt(parts[3]);
-//        date = parts[4];
-//        purchase_price = Integer.parseInt(parts[5]);
-//        quantity = Integer.parseInt(parts[6]);
-//
-//        stockInLoadData(id,supply_center,product_model,supply_staff,date,purchase_price,quantity);
-//                        cnt++;
-//
-//                    }
-//                    if (cnt % BATCH_SIZE == 0) {
-//                        stmt5.executeBatch();
-//                        stmt5.clearBatch();
-//                    }
-//
-//                }
-//            }
-//            if (cnt % BATCH_SIZE != 0) {
-//                stmt5.executeBatch();
-//            }
-//            con.commit();
-//            stmt5.close();
-//            closeDB();
-//            end = System.currentTimeMillis();
-//            System.out.println(cnt + " records successfully loaded\n");
-//            System.out.println("Loading speed : "
-//                    + (cnt * 1000)/(end - start)
-//                    + " records/s");
-//
-//        } catch (SQLException se) {
-//            System.err.println("SQL error: " + se.getMessage());
-//            try {
-//                con.rollback();
-//                stmt5.close();
-//            } catch (Exception e2) {
-//            }
-//            closeDB();
-//            System.exit(1);
-//        } catch (IOException e) {
-//            System.err.println("Fatal error: " + e.getMessage());
-//            try {
-//                con.rollback();
-//                stmt5.close();
-//            } catch (Exception e2) {
-//            }
-//            closeDB();
-//            System.exit(1);
-//        }
+        try (BufferedReader infile
+                     = new BufferedReader(new FileReader("task1_in_stoke_test_data_publish.csv"))) {
+            long     start;
+            long     end;
+            String   line;
+            String[] parts;
+        int      id;
+        String   supply_center;
+        String   product_model;
+        int      supply_staff;
+        String   date;
+        int      purchase_price;
+        int      quantity;
+            int      cnt = 0;
+
+            // Fill target table
+            start = System.currentTimeMillis();
+            openDB(prop.getProperty("host"), prop.getProperty("database"),
+                    prop.getProperty("user"), prop.getProperty("password"));
+
+            String   findAllCenter = findAllCenter();
+            String   findAllModel = findAllModel();
+            String   findAllStaff = findAllStaff();
+
+            while ((line = infile.readLine()) != null) {
+                parts = line.replace("Hong Kong, Macao and Taiwan regions of China","Hong Kong Macao and Taiwan regions of China").split(",");
+                if (parts.length > 1) {
+                    if (findAllCenter.contains(parts[1]) &&
+
+                            parts[1].equals(findCenterByStaff(Integer.parseInt(parts[3]))) &&
+
+                            "Supply Staff".equals(findTypeByStaff(Integer.parseInt(parts[3]))) &&
+
+                            findAllModel.contains(parts[2]) &&
+
+                            findAllStaff.contains(parts[3])) {
+
+        id = Integer.parseInt(parts[0]);
+        supply_center = parts[1];
+        product_model = parts[2];
+        supply_staff = Integer.parseInt(parts[3]);
+        date = parts[4];
+        purchase_price = Integer.parseInt(parts[5]);
+        quantity = Integer.parseInt(parts[6]);
+
+        stockInLoadData(id,supply_center,product_model,supply_staff,date,purchase_price,quantity);
+                        cnt++;
+
+                    }
+                    if (cnt % BATCH_SIZE == 0) {
+                        stmt5.executeBatch();
+                        stmt5.clearBatch();
+                    }
+
+                }
+            }
+            if (cnt % BATCH_SIZE != 0) {
+                stmt5.executeBatch();
+            }
+            con.commit();
+            stmt5.close();
+            closeDB();
+            end = System.currentTimeMillis();
+            System.out.println(cnt + " records successfully loaded\n");
+            System.out.println("Loading speed : "
+                    + (cnt * 1000)/(end - start)
+                    + " records/s");
+
+        } catch (SQLException se) {
+            System.err.println("SQL error: " + se.getMessage());
+            try {
+                con.rollback();
+                stmt5.close();
+            } catch (Exception e2) {
+            }
+            closeDB();
+            System.exit(1);
+        } catch (IOException e) {
+            System.err.println("Fatal error: " + e.getMessage());
+            try {
+                con.rollback();
+                stmt5.close();
+            } catch (Exception e2) {
+            }
+            closeDB();
+            System.exit(1);
+        }
         /**
          * contract表导入数据
          */
@@ -765,10 +959,9 @@ public class OriginalDataLoader {
             String   line;
             String[] parts;
             String contract;
+            String enterprise;
             int contract_manger;
             String contract_date;
-            String estimated_date;
-            String lodgement_date;
             String contract_type;
             int      cnt = 0;
             HashSet contractSet = new HashSet();
@@ -785,14 +978,13 @@ public class OriginalDataLoader {
                     {
                         contractSet.add(parts[0]);
                         contract = parts[0];
+                        enterprise = parts[1];
                         contract_manger = Integer.parseInt(parts[4]);
                         contract_date = parts[5];
-                        estimated_date = parts[6];
-                        lodgement_date = parts[7];
                         contract_type = parts[9];
 
-                        contractLoadData(contract, contract_manger,
-                                contract_date, estimated_date, lodgement_date, contract_type);
+                        contractLoadData(contract,enterprise,contract_manger,
+                                contract_date, contract_type);
                         cnt++;
                     }
 
@@ -845,10 +1037,11 @@ public class OriginalDataLoader {
             String   line;
             String[] parts;
             String contract;
-            String enterprise;
             String product_model;
             int quantity;
             int salesman_number;
+            String estimated_date;
+            String lodgement_date;
             int      cnt = 0;
 
             // Fill target table
@@ -866,13 +1059,15 @@ public class OriginalDataLoader {
                             "Salesman".equals(findTypeByStaff(Integer.parseInt(parts[8])))) {
 
                         contract = parts[0];
-                        enterprise = parts[1];
                         product_model = parts[2];
                         quantity = Integer.parseInt(parts[3]);
                         salesman_number = Integer.parseInt(parts[8]);
+                        estimated_date = parts[6];
+                        lodgement_date = parts[7];
 
 
-                        ordersLoadData(contract,enterprise,product_model,quantity,salesman_number);
+                        ordersLoadData(contract,product_model,quantity,salesman_number,estimated_date,
+                        lodgement_date);
                         cnt++;
                     }
                     if (cnt % BATCH_SIZE == 0) {
@@ -908,6 +1103,168 @@ public class OriginalDataLoader {
             try {
                 con.rollback();
                 stmt6.close();
+            } catch (Exception e2) {
+            }
+            closeDB();
+            System.exit(1);
+        }
+        /**
+         * 部分更新orders表
+         */
+        try (BufferedReader infile
+                     = new BufferedReader(new FileReader("task34_update_test_data_publish.tsv"))) {
+            long     start;
+            long     end;
+            String   line;
+            String[] parts;
+            String contract;
+            String product_model;
+            int quantity;
+            int salesman_number;
+            String estimated_date;
+            String lodgement_date;
+            String center;
+            int      cnt = 0;
+
+            // Fill target table
+            start = System.currentTimeMillis();
+            openDB(prop.getProperty("host"), prop.getProperty("database"),
+                    prop.getProperty("user"), prop.getProperty("password"));
+
+            while ((line = infile.readLine()) != null) {
+                parts = line.split("\t");
+                if (parts.length > 1) {
+                    if (Integer.parseInt(parts[2])==findOrderSalesman(parts[0],parts[1]
+                            )) {
+
+                        contract = parts[0];
+                        product_model = parts[1];
+                        quantity = Integer.parseInt(parts[3]);
+                        salesman_number = Integer.parseInt(parts[2]);
+                        estimated_date = parts[4];
+                        lodgement_date = parts[5];
+                        center = findCenterByContract(contract);
+
+                        UpdateStockIn(findCenterByContract(contract),product_model,
+                                findStockQuantity(center,product_model),
+                                findOrderQuantity(contract,product_model)-quantity);
+                        setUpdateOrders(contract,product_model,quantity,salesman_number,estimated_date,
+                                lodgement_date);
+
+                        if(quantity == 0){
+                            deleteOrder(contract,product_model,salesman_number);
+                        }
+                        cnt++;
+                    }
+
+                    if (cnt % BATCH_SIZE == 0) {
+                        stmt8.executeBatch();
+                        stmt8.clearBatch();
+                    }
+                }
+                System.out.println(parts.length);
+            }
+            if (cnt % BATCH_SIZE != 0) {
+                stmt8.executeBatch();
+            }
+            con.commit();
+            stmt8.close();
+            closeDB();
+            end = System.currentTimeMillis();
+            System.out.println(cnt + " records successfully updated\n");
+            System.out.println("Updating speed : "
+                    + (cnt * 1000)/(end - start)
+                    + " records/s");
+
+        } catch (SQLException se) {
+            System.err.println("SQL error: " + se.getMessage());
+            try {
+                con.rollback();
+                stmt8.close();
+            } catch (Exception e2) {
+            }
+            closeDB();
+            System.exit(1);
+        } catch (IOException e) {
+            System.err.println("Fatal error: " + e.getMessage());
+            try {
+                con.rollback();
+                stmt8.close();
+            } catch (Exception e2) {
+            }
+            closeDB();
+            System.exit(1);
+        }
+        /**
+         * 部分删除orders表
+         */
+        try (BufferedReader infile
+                     = new BufferedReader(new FileReader("task34_delete_test_data_publish.tsv"))) {
+            long     start;
+            long     end;
+            String   line;
+            String[] parts;
+            String contract;
+            int salesman_number;
+            String center;
+            String model;
+            int      cnt = 0;
+
+            // Fill target table
+            start = System.currentTimeMillis();
+            openDB(prop.getProperty("host"), prop.getProperty("database"),
+                    prop.getProperty("user"), prop.getProperty("password"));
+
+            while ((line = infile.readLine()) != null) {
+                parts = line.split("\t");
+                if (parts.length > 1) {
+                    if (findOrderSalesmanByContract(parts[0]).contains(Integer.parseInt(parts[1]))) {
+
+                        contract = parts[0];
+                        salesman_number = Integer.parseInt(parts[1]);
+                        center = findCenterByContract(contract);
+                        model = findOrderModelByContractSalesman(contract,salesman_number);
+
+                        UpdateStockIn(center, model,
+                                findStockQuantity(center,model),
+                                findOrderQuantity(contract,model));
+                        setDeleteOrders(contract,salesman_number);
+                        cnt++;
+                    }
+
+                    if (cnt % BATCH_SIZE == 0) {
+                        stmt9.executeBatch();
+                        stmt9.clearBatch();
+                    }
+                }
+                System.out.println(findOrderSalesmanByContract(parts[0]));
+            }
+            if (cnt % BATCH_SIZE != 0) {
+                stmt9.executeBatch();
+            }
+            con.commit();
+            stmt9.close();
+            closeDB();
+            end = System.currentTimeMillis();
+            System.out.println(cnt + " records successfully deleted\n");
+            System.out.println("Deleting speed : "
+                    + (cnt * 1000)/(end - start)
+                    + " records/s");
+
+        } catch (SQLException se) {
+            System.err.println("SQL error: " + se.getMessage());
+            try {
+                con.rollback();
+                stmt9.close();
+            } catch (Exception e2) {
+            }
+            closeDB();
+            System.exit(1);
+        } catch (IOException e) {
+            System.err.println("Fatal error: " + e.getMessage());
+            try {
+                con.rollback();
+                stmt9.close();
             } catch (Exception e2) {
             }
             closeDB();
