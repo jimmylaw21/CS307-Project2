@@ -53,7 +53,7 @@ public class OriginalDataLoader {
     private static String updateOrders =
             "update orders set contract = ?, product_model = ?,quantity = ?, " +
                     "salesman_number = ?, estimated_date = ?,lodgement_date = ?" +
-                    "where contract = ? and product_model = ?";
+                    "where contract = ? and product_model = ? and salesman_number = ?";
     private static String deleteOrders =
             "delete from orders where contract = ? and salesman_number = ?";
     /**
@@ -255,6 +255,7 @@ public class OriginalDataLoader {
             stmt8.setString(6, lodgement_date);
             stmt8.setString(7, contract);
             stmt8.setString(8, product_model);
+            stmt8.setInt(9, salesman_number);
             stmt8.addBatch();
         }
     }
@@ -521,8 +522,7 @@ public class OriginalDataLoader {
         return sb.toString();
     }
 
-
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SQLException {
         /**
          * 在argument里里读取要读的文件的filename，已弃用
          */
@@ -563,16 +563,31 @@ public class OriginalDataLoader {
         defprop.put("database", "postgres");
         Properties prop = new Properties(defprop);
 
+
+//        try (BufferedReader conf
+//                = new BufferedReader(new FileReader(propertyURL.getPath()))) {
+//          prop.load(conf);
+//        } catch (IOException e) {
+//           // Ignore
+//           System.err.println("No configuration file (loader.cnf) found");
+//        }
+
+        // Empty target table
+//        openDB(prop.getProperty("host"), prop.getProperty("database"),
+//                prop.getProperty("user"), prop.getProperty("password"));
+//        Statement stmt0;
+//        if (con != null) {
+//            stmt0 = con.createStatement();
+//            stmt0.execute("truncate table enterprise");
+//            stmt0.execute("truncate table center");
+//            stmt0.execute("truncate table staff");
+//            stmt0.execute("truncate table model");
+//            stmt0.close();
+//        }
+//        closeDB();
         /**
          * staff表导入数据
          */
-        try (BufferedReader conf
-                = new BufferedReader(new FileReader(propertyURL.getPath()))) {
-          prop.load(conf);
-        } catch (IOException e) {
-           // Ignore
-           System.err.println("No configuration file (loader.cnf) found");
-        }
         try (BufferedReader infile
                      = new BufferedReader(new FileReader("staff.csv"))) {
             long     start;
@@ -589,27 +604,12 @@ public class OriginalDataLoader {
             String   type;
             int      cnt = 0;
 
-            // Empty target table
-            openDB(prop.getProperty("host"), prop.getProperty("database"),
-                    prop.getProperty("user"), prop.getProperty("password"));
-            Statement stmt0;
-            if (con != null) {
-                stmt0 = con.createStatement();
-                stmt0.execute("truncate table enterprise");
-                stmt0.execute("truncate table center");
-                stmt0.execute("truncate table staff");
-                stmt0.execute("truncate table model");
-                stmt0.close();
-            }
-            closeDB();
-
-
             // Fill target table
             start = System.currentTimeMillis();
             openDB(prop.getProperty("host"), prop.getProperty("database"),
                     prop.getProperty("user"), prop.getProperty("password"));
             while ((line = infile.readLine()) != null) {
-                parts = line.replace("\"Hong Kong, Macao and Taiwan regions of China\"","\"Hong Kong Macao and Taiwan regions of China\"").split(",");
+                parts = line.replace("Hong Kong, Macao and Taiwan regions of China","Hong Kong Macao and Taiwan regions of China").split(",");
                 if (parts.length > 1) {
                     id = Integer.parseInt(parts[0]);
                     name = parts[1];
@@ -1134,8 +1134,8 @@ public class OriginalDataLoader {
             while ((line = infile.readLine()) != null) {
                 parts = line.split("\t");
                 if (parts.length > 1) {
-                    if (Integer.parseInt(parts[2])==findOrderSalesman(parts[0],parts[1]
-                            )) {
+                    if (Integer.parseInt(parts[2])==findOrderSalesman(parts[0],parts[1])&&
+                                    findOrderQuantity(parts[0],parts[1])>=Integer.parseInt(parts[3])) {
 
                         contract = parts[0];
                         product_model = parts[1];
