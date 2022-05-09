@@ -71,6 +71,7 @@ create table if not exists orders(
     salesman_number  integer not null,
     estimated_date   varchar(10) not null,
     lodgement_date   varchar(10) not null,
+    seq              integer not null,
     constraint fk_orders_model foreign key (product_model) references
 model(model),
     constraint fk_orders_staff foreign key (salesman_number) references
