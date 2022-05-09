@@ -1335,6 +1335,103 @@ public class OriginalDataLoader {
 
         closeDB();
     }
+    //Q6
+    public String getAllStaffCount() {
+        StringBuilder sb = new StringBuilder();
+        String sql = "select type, count(*)\n" +
+                "from staff\n" +
+                "group by type;";
+        try {
+            Statement statement = con.createStatement();
+            resultSet = statement.executeQuery(sql);
+            while (resultSet.next()) {
+                sb.append(resultSet.getString("type")).append("\t").append(resultSet.getInt("count")).append("\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
+
+    //Q7
+    public String getContractCount() {
+        StringBuilder sb = new StringBuilder();
+        String sql = "select count(*)\n" +
+                "from contract;";
+        try {
+            Statement statement = con.createStatement();
+            resultSet = statement.executeQuery(sql);
+            while (resultSet.next()) {
+                sb.append(resultSet.getString("count")).append("\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
+
+    //Q8
+    public String getOrderCount() {
+        StringBuilder sb = new StringBuilder();
+        String sql = "select count(*)\n" +
+                "from orders;\n";
+        try {
+            Statement statement = con.createStatement();
+            resultSet = statement.executeQuery(sql);
+            while (resultSet.next()) {
+                sb.append(resultSet.getString("count")).append("\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
+
+    //Q9
+    public String getNeverSoldProductCount() {
+        StringBuilder sb = new StringBuilder();
+        String sql = "select count(*)\n" +
+                "from stockIn\n" +
+                "where stockIn.model not in (select product_model\n" +
+                "                            from orders);";
+        try {
+            Statement statement = con.createStatement();
+            resultSet = statement.executeQuery(sql);
+            while (resultSet.next()) {
+                sb.append(resultSet.getString("count")).append("\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
+
+    //Q10
+    public String getFavoriteProductModel() {
+        StringBuilder sb = new StringBuilder();
+        String sql = "select model model_name, m quantity\n" +
+                "from (select model model, sum s\n" +
+                "      from (select sum(quantity) sum, product_model model\n" +
+                "            from orders\n" +
+                "            group by product_model) as a\n" +
+                "      group by model, sum) as b,\n" +
+                "     (select max(sum) m\n" +
+                "      from (select sum(quantity) sum, product_model model\n" +
+                "            from orders\n" +
+                "            group by product_model) as m) as maxInt\n" +
+                "where s = m\n" +
+                "group by model, m;";
+        try {
+            Statement statement = con.createStatement();
+            resultSet = statement.executeQuery(sql);
+            while (resultSet.next()) {
+                sb.append(resultSet.getString("model_name")).append("\t").append(resultSet.getInt("quantity")).append("\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
 
 
 }
