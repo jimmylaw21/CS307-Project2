@@ -1350,7 +1350,200 @@ public class OriginalDataLoader {
         closeDB();
     }
 
+   
+        //Q6
+    public String getAllStaffCount() {
+        StringBuilder sb = new StringBuilder();
+        String sql = "select type, count(*)\n" +
+                "from staff\n" +
+                "group by type;";
+        try {
+            Statement statement = con.createStatement();
+            resultSet = statement.executeQuery(sql);
+            while (resultSet.next()) {
+                sb.append(resultSet.getString("type")).append("\t").append(resultSet.getInt("count")).append("\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
 
+    //Q7
+    public String getContractCount() {
+        StringBuilder sb = new StringBuilder();
+        String sql = "select count(*)\n" +
+                "from contract;";
+        try {
+            Statement statement = con.createStatement();
+            resultSet = statement.executeQuery(sql);
+            while (resultSet.next()) {
+                sb.append(resultSet.getString("count")).append("\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
+
+    //Q8
+    public String getOrderCount() {
+        StringBuilder sb = new StringBuilder();
+        String sql = "select count(*)\n" +
+                "from orders;\n";
+        try {
+            Statement statement = con.createStatement();
+            resultSet = statement.executeQuery(sql);
+            while (resultSet.next()) {
+                sb.append(resultSet.getString("count")).append("\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
+
+    //Q9
+    public String getNeverSoldProductCount() {
+        StringBuilder sb = new StringBuilder();
+        String sql = "select count(*)\n" +
+                "from stockIn\n" +
+                "where stockIn.model not in (select product_model\n" +
+                "                            from orders);";
+        try {
+            Statement statement = con.createStatement();
+            resultSet = statement.executeQuery(sql);
+            while (resultSet.next()) {
+                sb.append(resultSet.getString("count")).append("\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
+
+    //Q10
+    public String getFavoriteProductModel() {
+        StringBuilder sb = new StringBuilder();
+        String sql = "select model model_name, m quantity\n" +
+                "from (select model model, sum s\n" +
+                "      from (select sum(quantity) sum, product_model model\n" +
+                "            from orders\n" +
+                "            group by product_model) as a\n" +
+                "      group by model, sum) as b,\n" +
+                "     (select max(sum) m\n" +
+                "      from (select sum(quantity) sum, product_model model\n" +
+                "            from orders\n" +
+                "            group by product_model) as m) as maxInt\n" +
+                "where s = m\n" +
+                "group by model, m;";
+        try {
+            Statement statement = con.createStatement();
+            resultSet = statement.executeQuery(sql);
+            while (resultSet.next()) {
+                sb.append(resultSet.getString("model_name")).append("\t").append(resultSet.getInt("quantity")).append("\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
+
+    //Q11
+    public String getAvgStockByCenter() {
+        StringBuilder sb = new StringBuilder();
+        String sql = "select supply_center, round(avg(s), 1)\n" +
+                "from (select model, sum(quantity) s, supply_center\n" +
+                "      from stock\n" +
+                "      group by model, supply_center) as ss\n" +
+                "group by supply_center\n" +
+                "order by supply_center asc;";
+        try {
+            Statement statement = con.createStatement();
+            resultSet = statement.executeQuery(sql);
+            while (resultSet.next()) {
+                sb.append(resultSet.getString("supply_center")).append("\t").append(resultSet.getInt("round")).append("\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
+
+    //Q12
+    public String getProductByNumber(String model) {
+        StringBuilder sb = new StringBuilder();
+        String preSql = "select model.number, model.model, stock.quantity, stock.supply_center\n" +
+                "from model,\n" +
+                "     stock\n" +
+                "where model.model = stock.model\n" +
+                "  and model.number = '%s';";
+        try {
+            String sql = String.format(preSql, model);
+            Statement statement = con.createStatement();
+            resultSet = statement.executeQuery(sql);
+            while (resultSet.next()) {
+                sb.append(resultSet.getString("model")).append("\t").append(resultSet.getInt("quantity")).append("\t").append(resultSet.getString("supply_center")).append("\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
+
+    //Q13
+    public String getContractInfo(String contract) {
+        StringBuilder sb = new StringBuilder();
+        String preSql_1 = "select distinct c.contract,\n" +
+                "                c.enterprise,\n" +
+                "                s.name,\n" +
+                "                e.supply_center\n" +
+                "from contract c,\n" +
+                "     staff s,\n" +
+                "     enterprise e\n" +
+                "where c.enterprise = e.name\n" +
+                "  and c.contract_manager = s.number\n" +
+                "  and c.contract = '%s';";
+
+        String preSql_2 = "select distinct o.product_model,\n" +
+                "                s.name,\n" +
+                "                o.quantity,\n" +
+                "                m.unit_price,\n" +
+                "                o.estimated_date,\n" +
+                "                o.lodgement_date\n" +
+                "from contract c,\n" +
+                "     orders o,\n" +
+                "     staff s,\n" +
+                "     model m\n" +
+                "where c.contract = o.contract\n" +
+                "  and o.product_model = m.model\n" +
+                "  and o.salesman_number = s.number\n" +
+                "  and c.contract = '%s';";
+        try {
+            String sql_1 = String.format(preSql_1, contract);
+            String sql_2 = String.format(preSql_2, contract);
+            Statement statement1 = con.createStatement();
+            Statement statement2 = con.createStatement();
+            resultSet = statement1.executeQuery(sql_1);
+            while (resultSet.next()) {
+                sb.append("contract_number: ").append(resultSet.getString("contract")).append("\n");
+                sb.append("enterprise: ").append(resultSet.getString("enterprise")).append("\n");
+                sb.append("manager: ").append(resultSet.getString("name")).append("\n");
+                sb.append("supply_center: ").append(resultSet.getString("supply_center")).append("\n");
+            }
+            resultSet = statement2.executeQuery(sql_2);
+            while (resultSet.next()) {
+                sb.append(resultSet.getString("product_model")).append("\t").append(resultSet.getString("name")).append("\t");
+                sb.append(resultSet.getInt("quantity")).append("\t").append(resultSet.getInt("unit_price")).append("\t");
+                sb.append(resultSet.getString("estimated_date")).append("\t").append(resultSet.getString("lodgement_date")).append("\n");
+
+
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
 }
 
 
