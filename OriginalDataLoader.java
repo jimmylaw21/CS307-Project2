@@ -1406,10 +1406,11 @@ public class OriginalDataLoader {
     //Q9
     public String getNeverSoldProductCount() {
         StringBuilder sb = new StringBuilder();
-        String sql = "select count(*)\n" +
-                "from stockIn\n" +
-                "where stockIn.model not in (select product_model\n" +
-                "                            from orders);";
+        String sql = "select count(*)
+from (select distinct model
+      from stockIn
+      where stockIn.model not in (select product_model
+                                  from orders))as cnt;";
         try {
             Statement statement = con.createStatement();
             resultSet = statement.executeQuery(sql);
