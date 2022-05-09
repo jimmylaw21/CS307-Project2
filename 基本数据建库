@@ -1,3 +1,11 @@
+drop table stock;
+drop table orders;
+drop table contract;
+drop table stockIn;
+drop table enterprise;
+drop table center;
+drop table staff;
+drop table model;
 create table if not exists enterprise
 (
     id integer primary key ,
@@ -7,13 +15,11 @@ create table if not exists enterprise
     supply_center     varchar(50) not null,
     industry          varchar(40) not null
 );
-
 create table if not exists center
 (
     id integer primary key ,
     name varchar(50) unique not null
 );
-
 create table if not exists staff
 (
     id integer primary key ,
@@ -71,4 +77,15 @@ model(model),
 staff(number),
     constraint fk_orders_contract foreign key (contract) references
 contract(contract)
+);
+create table if not exists stock
+(
+    id              integer primary key not null,
+    supply_center   varchar(50) not null,
+    model           varchar(70) not null,
+    quantity        integer not null,
+    constraint fk_stockIn_center foreign key (supply_center) references
+center(name),
+    constraint fk_stockIn_model foreign key (model) references
+model(model)
 );
