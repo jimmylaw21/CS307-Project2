@@ -21,7 +21,9 @@ public class testOutput {
             System.out.println(dm.getFavoriteProductModel());  //Q10
             System.out.println(dm.getAvgStockByCenter());  //Q11
             System.out.println(dm.getProductByNumber("A50L172"));  //Q12
+            System.out.println(dm.getContractInfo("CSE0000106"));  //Q13
             System.out.println(dm.getContractInfo("CSE0000209"));  //Q13
+            System.out.println(dm.getContractInfo("CSE0000306"));  //Q13
 
             dm.closeDB();
         } catch (IllegalArgumentException e) {
