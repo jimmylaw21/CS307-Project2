@@ -47,8 +47,8 @@ public class OriginalDataLoader {
             +"values(?,?,?,?)";
 
     private static String ordersLoader =
-            "insert into orders(contract,product_model,quantity,salesman_number,estimated_date,lodgement_date)"
-                    +"values(?,?,?,?,?,?)";
+            "insert into orders(contract,product_model,quantity,salesman_number,estimated_date,lodgement_date,seq)"
+                    +"values(?,?,?,?,?,?,?)";
 
     private static String contractLoader =
             "insert into contract(contract,enterprise,contract_manager,contract_date,contract_type)"
@@ -58,11 +58,11 @@ public class OriginalDataLoader {
                     "salesman_number = ?, estimated_date = ?,lodgement_date = ?" +
                     "where contract = ? and product_model = ? and salesman_number = ?";
     private static String deleteOrders =
-            "delete from orders where contract = ? and salesman_number = ?";
+            "delete from orders where contract = ? and salesman_number = ? and seq = ?";
     /**
      * 打开数据库的方法
      */
-    public static void openDB(String host, String dbname,
+    private static void openDB(String host, String dbname,
                                String user, String pwd) {
         try {
             Class.forName("org.postgresql.Driver");
@@ -110,7 +110,7 @@ public class OriginalDataLoader {
     /**
      * 关闭数据库的方法
      */
-    public static void closeDB() {
+    private static void closeDB() {
         if (con != null) {
             try {
                 if (stmt1 != null) {
@@ -224,7 +224,7 @@ public class OriginalDataLoader {
 
     private static void ordersLoadData(String contract,String product_model,int quantity,
                                        int salesman_number,String estimated_date,
-                                       String lodgement_date)
+                                       String lodgement_date,int seq)
             throws SQLException {
         if (con != null) {
             stmt6.setString(1, contract);
@@ -233,6 +233,7 @@ public class OriginalDataLoader {
             stmt6.setInt(4, salesman_number);
             stmt6.setString(5, estimated_date);
             stmt6.setString(6, lodgement_date);
+            stmt6.setInt(7, seq);
             stmt6.addBatch();
         }
     }
@@ -266,11 +267,12 @@ public class OriginalDataLoader {
             stmt8.addBatch();
         }
     }
-    private static void setDeleteOrders(String contract,int salesman)
+    private static void setDeleteOrders(String contract,int salesman,int seq)
             throws SQLException {
         if (con != null) {
             stmt9.setString(1, contract);
             stmt9.setInt(2, salesman);
+            stmt9.setInt(3, seq);
             stmt9.addBatch();
         }
     }
@@ -378,14 +380,15 @@ public class OriginalDataLoader {
         return num;
     }
 
-    public static int findOrderSalesman(String contract, String model){
+    public static int findOrderSalesman(String contract, String model,int salesman){
         int num = 0;
         String sql = "select salesman_number from orders " +
-                "where contract = ? and product_model = ? ;";
+                "where contract = ? and product_model = ? and salesman_number = ?;";
         try {
             PreparedStatement preparedStatement = con.prepareStatement(sql);
             preparedStatement.setString(1,contract);
             preparedStatement.setString(2,model);
+            preparedStatement.setInt(3,salesman);
             resultSet = preparedStatement.executeQuery();
             while(resultSet.next()){
                 num = Integer.parseInt((String.format(resultSet.getString("salesman_number"))));
@@ -904,15 +907,15 @@ public class OriginalDataLoader {
             long     end;
             String   line;
             String[] parts;
-        int      id;
-        String   supply_center;
-        String   product_model;
-        int      supply_staff;
-        String   date;
-        int      purchase_price;
-        int      quantity;
-        HashSet center = new HashSet();
-        HashSet model = new HashSet();
+            int      id;
+            String   supply_center;
+            String   product_model;
+            int      supply_staff;
+            String   date;
+            int      purchase_price;
+            int      quantity;
+            HashSet centerModel = new HashSet();
+            StringBuilder sb = new StringBuilder();
             int      cnt = 0;
 
             // Fill target table
@@ -948,7 +951,10 @@ public class OriginalDataLoader {
                             stockInLoadData(id,supply_center,product_model,supply_staff,date,purchase_price,quantity);
                             cnt++;
 
-                            if(center.contains(supply_center) && model.contains(product_model)){
+                            sb.delete(0,sb.length());
+                            sb.append(supply_center).append(product_model);
+
+                            if(centerModel.contains(sb.toString())){
                                 updateStock(supply_center,
                                         product_model,
                                         findStockQuantity(supply_center,product_model),
@@ -956,10 +962,8 @@ public class OriginalDataLoader {
                                         );
                             } else {
                                 stockLoadData(id,supply_center,product_model,quantity);
-                                center.add(supply_center);
-                                model.add(product_model);
+                                centerModel.add(sb.toString());
                             }
-                        System.out.println(center);
                     }
                     if (cnt % BATCH_SIZE == 0) {
                         stmt5.executeBatch();
@@ -1099,6 +1103,9 @@ public class OriginalDataLoader {
             String estimated_date;
             String lodgement_date;
             String center;
+            int seq = 1;
+            StringBuilder sb = new StringBuilder();
+            HashSet contractSalesman = new HashSet();
             int      cnt = 0;
 
             // Fill target table
@@ -1123,9 +1130,16 @@ public class OriginalDataLoader {
                         lodgement_date = parts[7];
                         center = findCenterByContract(contract);
 
+                        sb.delete(0,sb.length());
+                        sb.append(contract).append(parts[8]);
+                        if (contractSalesman.contains(sb.toString())){
+                            seq++;
+                        }else{
+                            contractSalesman.add(sb.toString());
+                        }
 
                         ordersLoadData(contract,product_model,quantity,salesman_number,estimated_date,
-                        lodgement_date);
+                        lodgement_date,seq);
                         updateStock(center,
                                 product_model,
                                 findStockQuantity(center,product_model),
@@ -1196,8 +1210,7 @@ public class OriginalDataLoader {
             while ((line = infile.readLine()) != null) {
                 parts = line.split("\t");
                 if (parts.length > 1) {
-                    if (Integer.parseInt(parts[2])==findOrderSalesman(parts[0],parts[1])&&
-                                    findOrderQuantity(parts[0],parts[1])>=Integer.parseInt(parts[3])) {
+                    if (Integer.parseInt(parts[2])==findOrderSalesman(parts[0],parts[1], Integer.parseInt(parts[2]))) {
 
                         contract = parts[0];
                         product_model = parts[1];
@@ -1214,6 +1227,7 @@ public class OriginalDataLoader {
                                 lodgement_date);
 
                         if(quantity == 0){
+                            System.out.println(1);
                             deleteOrder(contract,product_model,salesman_number);
                         }
                         cnt++;
@@ -1224,7 +1238,6 @@ public class OriginalDataLoader {
                         stmt8.clearBatch();
                     }
                 }
-                System.out.println(parts.length);
             }
             if (cnt % BATCH_SIZE != 0) {
                 stmt8.executeBatch();
@@ -1270,6 +1283,7 @@ public class OriginalDataLoader {
             int salesman_number;
             String center;
             String model;
+            int seq;
             int      cnt = 0;
 
             // Fill target table
@@ -1284,13 +1298,14 @@ public class OriginalDataLoader {
 
                         contract = parts[0];
                         salesman_number = Integer.parseInt(parts[1]);
+                        seq = Integer.parseInt(parts[2]);
                         center = findCenterByContract(contract);
                         model = findOrderModelByContractSalesman(contract,salesman_number);
 
                         updateStock(center, model,
                                 findStockQuantity(center,model),
                                 findOrderQuantity(contract,model));
-                        setDeleteOrders(contract,salesman_number);
+                        setDeleteOrders(contract,salesman_number,seq);
                         cnt++;
                     }
 
@@ -1299,7 +1314,6 @@ public class OriginalDataLoader {
                         stmt9.clearBatch();
                     }
                 }
-                System.out.println(findOrderSalesmanByContract(parts[0]));
             }
             if (cnt % BATCH_SIZE != 0) {
                 stmt9.executeBatch();
@@ -1334,103 +1348,6 @@ public class OriginalDataLoader {
         }
 
         closeDB();
-    }
-    //Q6
-    public String getAllStaffCount() {
-        StringBuilder sb = new StringBuilder();
-        String sql = "select type, count(*)\n" +
-                "from staff\n" +
-                "group by type;";
-        try {
-            Statement statement = con.createStatement();
-            resultSet = statement.executeQuery(sql);
-            while (resultSet.next()) {
-                sb.append(resultSet.getString("type")).append("\t").append(resultSet.getInt("count")).append("\n");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return sb.toString();
-    }
-
-    //Q7
-    public String getContractCount() {
-        StringBuilder sb = new StringBuilder();
-        String sql = "select count(*)\n" +
-                "from contract;";
-        try {
-            Statement statement = con.createStatement();
-            resultSet = statement.executeQuery(sql);
-            while (resultSet.next()) {
-                sb.append(resultSet.getString("count")).append("\n");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return sb.toString();
-    }
-
-    //Q8
-    public String getOrderCount() {
-        StringBuilder sb = new StringBuilder();
-        String sql = "select count(*)\n" +
-                "from orders;\n";
-        try {
-            Statement statement = con.createStatement();
-            resultSet = statement.executeQuery(sql);
-            while (resultSet.next()) {
-                sb.append(resultSet.getString("count")).append("\n");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return sb.toString();
-    }
-
-    //Q9
-    public String getNeverSoldProductCount() {
-        StringBuilder sb = new StringBuilder();
-        String sql = "select count(*)\n" +
-                "from stockIn\n" +
-                "where stockIn.model not in (select product_model\n" +
-                "                            from orders);";
-        try {
-            Statement statement = con.createStatement();
-            resultSet = statement.executeQuery(sql);
-            while (resultSet.next()) {
-                sb.append(resultSet.getString("count")).append("\n");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return sb.toString();
-    }
-
-    //Q10
-    public String getFavoriteProductModel() {
-        StringBuilder sb = new StringBuilder();
-        String sql = "select model model_name, m quantity\n" +
-                "from (select model model, sum s\n" +
-                "      from (select sum(quantity) sum, product_model model\n" +
-                "            from orders\n" +
-                "            group by product_model) as a\n" +
-                "      group by model, sum) as b,\n" +
-                "     (select max(sum) m\n" +
-                "      from (select sum(quantity) sum, product_model model\n" +
-                "            from orders\n" +
-                "            group by product_model) as m) as maxInt\n" +
-                "where s = m\n" +
-                "group by model, m;";
-        try {
-            Statement statement = con.createStatement();
-            resultSet = statement.executeQuery(sql);
-            while (resultSet.next()) {
-                sb.append(resultSet.getString("model_name")).append("\t").append(resultSet.getInt("quantity")).append("\n");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return sb.toString();
     }
 
 
