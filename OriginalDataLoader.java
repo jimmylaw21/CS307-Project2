@@ -13,12 +13,12 @@ import java.net.URL;
 import java.util.stream.Collectors;
 
 public class OriginalDataLoader {
-    private static final int  BATCH_SIZE = 500;
+    private static final int  BATCH_SIZE = 50;
     private static URL        propertyURL = OriginalDataLoader.class
             .getResource("/loader.cnf");
 
     private static Connection         con = null;
-    private static PreparedStatement  stmt1,stmt2,stmt3,stmt4,stmt5,stmt6,stmt7,stmt8,stmt9 = null;
+    private static PreparedStatement  stmt1,stmt2,stmt3,stmt4,stmt5,stmt6,stmt7,stmt8,stmt9,stmt10 = null;
     private static boolean            verbose = false;
     private static ResultSet resultSet;
 
@@ -42,6 +42,9 @@ public class OriginalDataLoader {
     private static String stockInLoader =
             "insert into stockIn(id,supply_center,model,supply_staff,date,purchase_price,quantity)"
             +"values(?,?,?,?,?,?,?)";
+
+    private static String stockLoader = "insert into stock(id,supply_center,model,quantity)"
+            +"values(?,?,?,?)";
 
     private static String ordersLoader =
             "insert into orders(contract,product_model,quantity,salesman_number,estimated_date,lodgement_date)"
@@ -96,6 +99,7 @@ public class OriginalDataLoader {
             stmt7 = con.prepareStatement(contractLoader);
             stmt8 = con.prepareStatement(updateOrders);
             stmt9 = con.prepareStatement(deleteOrders);
+            stmt10 = con.prepareStatement(stockLoader);
         } catch (SQLException e) {
             System.err.println("Insert statement failed");
             System.err.println(e.getMessage());
@@ -135,6 +139,9 @@ public class OriginalDataLoader {
                 }
                 if (stmt9 != null) {
                     stmt9.close();
+                }
+                if (stmt10 != null) {
+                    stmt10.close();
                 }
                 con.close();
                 con = null;
@@ -268,6 +275,17 @@ public class OriginalDataLoader {
         }
     }
 
+    private static void stockLoadData(int id,String supply_center,String product_model, int quantity)
+            throws SQLException {
+        if (con != null) {
+            stmt10.setInt(1, id);
+            stmt10.setString(2, supply_center);
+            stmt10.setString(3, product_model);
+            stmt10.setInt(4, quantity);
+            stmt10.addBatch();
+        }
+    }
+
     /**
      * 下列静态方法用于筛选非法数据，在DatabaseManipulation中有同款，图方便在这个类里ctrlcv了静态版本
      */
@@ -322,7 +340,7 @@ public class OriginalDataLoader {
         return num;
     }
 
-    public static int findStockQuantity(String contract, String model) {
+    public static int findStockInQuantity2(String contract, String model) {
         int num = 0;
         String sql = "select quantity from stockIn s\n" +
                 "    join enterprise e on s.supply_center = e.supply_center\n" +
@@ -331,6 +349,24 @@ public class OriginalDataLoader {
         try {
             PreparedStatement preparedStatement = con.prepareStatement(sql);
             preparedStatement.setString(1,contract);
+            preparedStatement.setString(2,model);
+            resultSet = preparedStatement.executeQuery();
+            while(resultSet.next()){
+                num = Integer.parseInt((String.format(resultSet.getString("quantity"))));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return num;
+    }
+
+    public static int findStockQuantity(String center, String model) {
+        int num = 0;
+        String sql = "select quantity from stock  " +
+                "where supply_center = ? and model = ? ;";
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement(sql);
+            preparedStatement.setString(1,center);
             preparedStatement.setString(2,model);
             resultSet = preparedStatement.executeQuery();
             while(resultSet.next()){
@@ -449,8 +485,8 @@ public class OriginalDataLoader {
     }
 
 
-    public static void UpdateStockIn(String center, String model,int Ivalue, int Dvalue){
-        String sql = "update StockIn set quantity = " + (Ivalue+Dvalue) +
+    public static void updateStock(String center, String model,int Ivalue, int Dvalue){
+        String sql = "update stock set quantity = " + (Ivalue+Dvalue) +
                 "where supply_center = ? and model = ?";
         try {
             PreparedStatement preparedStatement = con.prepareStatement(sql);
@@ -860,7 +896,7 @@ public class OriginalDataLoader {
             System.exit(1);
         }
     /**
-     * stockIn表导入数据
+     * stockIn表导入数据,包括stockIn和stock
      */
         try (BufferedReader infile
                      = new BufferedReader(new FileReader("task1_in_stoke_test_data_publish.csv"))) {
@@ -875,6 +911,8 @@ public class OriginalDataLoader {
         String   date;
         int      purchase_price;
         int      quantity;
+        HashSet center = new HashSet();
+        HashSet model = new HashSet();
             int      cnt = 0;
 
             // Fill target table
@@ -899,30 +937,46 @@ public class OriginalDataLoader {
 
                             findAllStaff.contains(parts[3])) {
 
-        id = Integer.parseInt(parts[0]);
-        supply_center = parts[1];
-        product_model = parts[2];
-        supply_staff = Integer.parseInt(parts[3]);
-        date = parts[4];
-        purchase_price = Integer.parseInt(parts[5]);
-        quantity = Integer.parseInt(parts[6]);
+                            id = Integer.parseInt(parts[0]);
+                            supply_center = parts[1];
+                            product_model = parts[2];
+                            supply_staff = Integer.parseInt(parts[3]);
+                            date = parts[4];
+                            purchase_price = Integer.parseInt(parts[5]);
+                            quantity = Integer.parseInt(parts[6]);
 
-        stockInLoadData(id,supply_center,product_model,supply_staff,date,purchase_price,quantity);
-                        cnt++;
+                            stockInLoadData(id,supply_center,product_model,supply_staff,date,purchase_price,quantity);
+                            cnt++;
 
+                            if(center.contains(supply_center) && model.contains(product_model)){
+                                updateStock(supply_center,
+                                        product_model,
+                                        findStockQuantity(supply_center,product_model),
+                                        quantity
+                                        );
+                            } else {
+                                stockLoadData(id,supply_center,product_model,quantity);
+                                center.add(supply_center);
+                                model.add(product_model);
+                            }
+                        System.out.println(center);
                     }
                     if (cnt % BATCH_SIZE == 0) {
                         stmt5.executeBatch();
                         stmt5.clearBatch();
+                        stmt10.executeBatch();
+                        stmt10.clearBatch();
                     }
 
                 }
             }
             if (cnt % BATCH_SIZE != 0) {
                 stmt5.executeBatch();
+                stmt10.executeBatch();
             }
             con.commit();
             stmt5.close();
+            stmt10.close();
             closeDB();
             end = System.currentTimeMillis();
             System.out.println(cnt + " records successfully loaded\n");
@@ -935,6 +989,7 @@ public class OriginalDataLoader {
             try {
                 con.rollback();
                 stmt5.close();
+                stmt10.close();
             } catch (Exception e2) {
             }
             closeDB();
@@ -944,6 +999,7 @@ public class OriginalDataLoader {
             try {
                 con.rollback();
                 stmt5.close();
+                stmt10.close();
             } catch (Exception e2) {
             }
             closeDB();
@@ -1042,6 +1098,7 @@ public class OriginalDataLoader {
             int salesman_number;
             String estimated_date;
             String lodgement_date;
+            String center;
             int      cnt = 0;
 
             // Fill target table
@@ -1055,7 +1112,7 @@ public class OriginalDataLoader {
                 parts = line.replace("Hong Kong, Macao and Taiwan regions of China","Hong Kong Macao and Taiwan regions of China").split(",");
                 if (parts.length > 1) {
                     if ( findAllStaff.contains(parts[8]) &&
-                            Integer.parseInt(parts[3]) <= findStockInQuantity(parts[2],parts[1])  &&
+                            Integer.parseInt(parts[3]) <= findStockQuantity(findCenterByContract(parts[0]),parts[2])  &&
                             "Salesman".equals(findTypeByStaff(Integer.parseInt(parts[8])))) {
 
                         contract = parts[0];
@@ -1064,10 +1121,15 @@ public class OriginalDataLoader {
                         salesman_number = Integer.parseInt(parts[8]);
                         estimated_date = parts[6];
                         lodgement_date = parts[7];
+                        center = findCenterByContract(contract);
 
 
                         ordersLoadData(contract,product_model,quantity,salesman_number,estimated_date,
                         lodgement_date);
+                        updateStock(center,
+                                product_model,
+                                findStockQuantity(center,product_model),
+                                -quantity);
                         cnt++;
                     }
                     if (cnt % BATCH_SIZE == 0) {
@@ -1145,7 +1207,7 @@ public class OriginalDataLoader {
                         lodgement_date = parts[5];
                         center = findCenterByContract(contract);
 
-                        UpdateStockIn(findCenterByContract(contract),product_model,
+                        updateStock(findCenterByContract(contract),product_model,
                                 findStockQuantity(center,product_model),
                                 findOrderQuantity(contract,product_model)-quantity);
                         setUpdateOrders(contract,product_model,quantity,salesman_number,estimated_date,
@@ -1225,7 +1287,7 @@ public class OriginalDataLoader {
                         center = findCenterByContract(contract);
                         model = findOrderModelByContractSalesman(contract,salesman_number);
 
-                        UpdateStockIn(center, model,
+                        updateStock(center, model,
                                 findStockQuantity(center,model),
                                 findOrderQuantity(contract,model));
                         setDeleteOrders(contract,salesman_number);
