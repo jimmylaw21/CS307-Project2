@@ -598,7 +598,7 @@ public class OriginalDataLoader {
         Properties defprop = new Properties();
         defprop.put("host", "localhost");
         defprop.put("user", "postgres");
-        defprop.put("password", "Lyw1107Ypa");
+        defprop.put("password", "123456");
         defprop.put("database", "proj_2");
         Properties prop = new Properties(defprop);
 
