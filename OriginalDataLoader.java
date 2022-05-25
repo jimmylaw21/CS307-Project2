@@ -1,4 +1,4 @@
-/**
+package main.java; /**
  * 导入不同表时，注意修改stmt预编译用的String，修改LoadData方法和main方法里的String，set集合，part[]等等
  */
 import com.sun.org.apache.xpath.internal.objects.XString;
@@ -13,7 +13,7 @@ import java.net.URL;
 import java.util.stream.Collectors;
 
 public class OriginalDataLoader {
-    private static final int  BATCH_SIZE = 3;
+    private static final int  BATCH_SIZE = 1;
     private static URL        propertyURL = OriginalDataLoader.class
             .getResource("/loader.cnf");
 
@@ -47,8 +47,8 @@ public class OriginalDataLoader {
             +"values(?,?,?,?)";
 
     private static String ordersLoader =
-            "insert into orders(contract,product_model,quantity,salesman_number,estimated_date,lodgement_date,seq)"
-                    +"values(?,?,?,?,?,?,?)";
+            "insert into orders(contract,product_model,quantity,salesman_number,estimated_date,lodgement_date)"
+                    +"values(?,?,?,?,?,?)";
 
     private static String contractLoader =
             "insert into contract(contract,enterprise,contract_manager,contract_date,contract_type)"
@@ -58,7 +58,7 @@ public class OriginalDataLoader {
                     "salesman_number = ?, estimated_date = ?,lodgement_date = ?" +
                     "where contract = ? and product_model = ? and salesman_number = ?";
     private static String deleteOrders =
-            "delete from orders where contract = ? and salesman_number = ? and seq = ?";
+            "delete from orders where contract = ? and salesman_number = ? and product_model = ?";
     /**
      * 打开数据库的方法
      */
@@ -224,7 +224,7 @@ public class OriginalDataLoader {
 
     private static void ordersLoadData(String contract,String product_model,int quantity,
                                        int salesman_number,String estimated_date,
-                                       String lodgement_date,int seq)
+                                       String lodgement_date)
             throws SQLException {
         if (con != null) {
             stmt6.setString(1, contract);
@@ -233,7 +233,6 @@ public class OriginalDataLoader {
             stmt6.setInt(4, salesman_number);
             stmt6.setString(5, estimated_date);
             stmt6.setString(6, lodgement_date);
-            stmt6.setInt(7, seq);
             stmt6.addBatch();
         }
     }
@@ -267,12 +266,12 @@ public class OriginalDataLoader {
             stmt8.addBatch();
         }
     }
-    private static void setDeleteOrders(String contract,int salesman,int seq)
+    private static void setDeleteOrders(String contract,int salesman,String model)
             throws SQLException {
         if (con != null) {
             stmt9.setString(1, contract);
             stmt9.setInt(2, salesman);
-            stmt9.setInt(3, seq);
+            stmt9.setString(3, model);
             stmt9.addBatch();
         }
     }
@@ -434,14 +433,16 @@ public class OriginalDataLoader {
         return sb;
     }
 
-    public static String findOrderModelByContractSalesman(String contract,int salesman){
+    public static String findOrderModelByContractSalesman(String contract,int salesman ,int seq){
         String sb ="";
         String sql = "select product_model from orders " +
-                "where contract = ? and salesman_number = ?";
+                "where contract = ? and salesman_number = ?" +
+                "order by estimated_date,product_model limit 1 offset ?";
         try {
             PreparedStatement preparedStatement = con.prepareStatement(sql);
             preparedStatement.setString(1,contract);
             preparedStatement.setInt(2,salesman);
+            preparedStatement.setInt(3,seq);
             resultSet = preparedStatement.executeQuery();
             while(resultSet.next()){
                 sb = (String.format(resultSet.getString("product_model")));
@@ -452,14 +453,15 @@ public class OriginalDataLoader {
         return sb;
     }
 
-    public static int findOrderQuantity(String contract, String model){
+    public static int findOrderQuantity(String contract,int salesman,String model){
         int num = 0;
         String sql = "select quantity from orders " +
-                "where contract = ? and product_model = ? ;";
+                "where contract = ? and salesman_number = ? and product_model = ? ;";
         try {
             PreparedStatement preparedStatement = con.prepareStatement(sql);
             preparedStatement.setString(1,contract);
-            preparedStatement.setString(2,model);
+            preparedStatement.setInt(2,salesman);
+            preparedStatement.setString(3,model);
             resultSet = preparedStatement.executeQuery();
             while(resultSet.next()){
                 num = Integer.parseInt((String.format(resultSet.getString("quantity"))));
@@ -597,9 +599,9 @@ public class OriginalDataLoader {
          */
         Properties defprop = new Properties();
         defprop.put("host", "localhost");
-        defprop.put("user", "postgres");
+        defprop.put("user", "checker");
         defprop.put("password", "123456");
-        defprop.put("database", "proj_2");
+        defprop.put("database", "postgres");
         Properties prop = new Properties(defprop);
 
 
@@ -902,7 +904,7 @@ public class OriginalDataLoader {
          * stockIn表导入数据,包括stockIn和stock
          */
         try (BufferedReader infile
-                     = new BufferedReader(new FileReader("task1_in_stoke_test_data_publish.csv"))) {
+                     = new BufferedReader(new FileReader("in_stoke_test.csv"))) {
             long     start;
             long     end;
             String   line;
@@ -1013,7 +1015,7 @@ public class OriginalDataLoader {
          * contract表导入数据
          */
         try (BufferedReader infile
-                     = new BufferedReader(new FileReader("task2_test_data_publish.csv"))) {
+                     = new BufferedReader(new FileReader("task2_test_data_final_public.tsv"))) {
             long     start;
             long     end;
             String   line;
@@ -1032,7 +1034,7 @@ public class OriginalDataLoader {
                     prop.getProperty("user"), prop.getProperty("password"));
 
             while ((line = infile.readLine()) != null) {
-                parts = line.replace("Hong Kong, Macao and Taiwan regions of China","Hong Kong Macao and Taiwan regions of China").split(",");
+                parts = line.replace("Hong Kong, Macao and Taiwan regions of China","Hong Kong Macao and Taiwan regions of China").split("\t");
                 if (parts.length > 1) {
                     if(!contractSet.contains(parts[0]))
                     {
@@ -1091,7 +1093,7 @@ public class OriginalDataLoader {
          * orders表导入数据
          */
         try (BufferedReader infile
-                     = new BufferedReader(new FileReader("task2_test_data_publish.csv"))) {
+                     = new BufferedReader(new FileReader("task2_test_data_final_public.tsv"))) {
             long     start;
             long     end;
             String   line;
@@ -1103,7 +1105,6 @@ public class OriginalDataLoader {
             String estimated_date;
             String lodgement_date;
             String center;
-            int seq = 1;
             StringBuilder sb = new StringBuilder();
             HashSet contractSalesman = new HashSet();
             int      cnt = 0;
@@ -1116,7 +1117,7 @@ public class OriginalDataLoader {
             String   findAllStaff = findAllStaff();
 
             while ((line = infile.readLine()) != null) {
-                parts = line.replace("Hong Kong, Macao and Taiwan regions of China","Hong Kong Macao and Taiwan regions of China").split(",");
+                parts = line.replace("Hong Kong, Macao and Taiwan regions of China","Hong Kong Macao and Taiwan regions of China").split("\t");
                 if (parts.length > 1) {
                     if ( findAllStaff.contains(parts[8]) &&
                             Integer.parseInt(parts[3]) <= findStockQuantity(findCenterByContract(parts[0]),parts[2])  &&
@@ -1132,14 +1133,14 @@ public class OriginalDataLoader {
 
                         sb.delete(0,sb.length());
                         sb.append(contract).append(parts[8]);
-                        if (contractSalesman.contains(sb.toString())){
-                            seq++;
-                        }else{
-                            contractSalesman.add(sb.toString());
-                        }
+//                        if (contractSalesman.contains(sb.toString())){
+//                            seq++;
+//                        }else{
+//                            contractSalesman.add(sb.toString());
+//                        }
 
                         ordersLoadData(contract,product_model,quantity,salesman_number,estimated_date,
-                                lodgement_date,seq);
+                                lodgement_date);
                         updateStock(center,
                                 product_model,
                                 findStockQuantity(center,product_model),
@@ -1188,7 +1189,7 @@ public class OriginalDataLoader {
          * 部分更新orders表
          */
         try (BufferedReader infile
-                     = new BufferedReader(new FileReader("task34_update_test_data_publish.tsv"))) {
+                     = new BufferedReader(new FileReader("update_final_test.tsv"))) {
             long     start;
             long     end;
             String   line;
@@ -1222,7 +1223,7 @@ public class OriginalDataLoader {
 
                         updateStock(findCenterByContract(contract),product_model,
                                 findStockQuantity(center,product_model),
-                                findOrderQuantity(contract,product_model)-quantity);
+                                findOrderQuantity(contract,salesman_number,product_model)-quantity);
                         setUpdateOrders(contract,product_model,quantity,salesman_number,estimated_date,
                                 lodgement_date);
 
@@ -1274,7 +1275,7 @@ public class OriginalDataLoader {
          * 部分删除orders表
          */
         try (BufferedReader infile
-                     = new BufferedReader(new FileReader("task34_delete_test_data_publish.tsv"))) {
+                     = new BufferedReader(new FileReader("delete_final.tsv"))) {
             long     start;
             long     end;
             String   line;
@@ -1283,7 +1284,7 @@ public class OriginalDataLoader {
             int salesman_number;
             String center;
             String model;
-            int seq;
+            int seq ;
             int      cnt = 0;
 
             // Fill target table
@@ -1292,7 +1293,7 @@ public class OriginalDataLoader {
                     prop.getProperty("user"), prop.getProperty("password"));
 
             while ((line = infile.readLine()) != null) {
-                parts = line.split("\t");
+                parts = line.split(" ");
                 if (parts.length > 1) {
                     if (findOrderSalesmanByContract(parts[0]).contains(Integer.parseInt(parts[1]))) {
 
@@ -1300,12 +1301,12 @@ public class OriginalDataLoader {
                         salesman_number = Integer.parseInt(parts[1]);
                         seq = Integer.parseInt(parts[2]);
                         center = findCenterByContract(contract);
-                        model = findOrderModelByContractSalesman(contract,salesman_number);
+                        model = findOrderModelByContractSalesman(contract,salesman_number,seq-1);
 
                         updateStock(center, model,
                                 findStockQuantity(center,model),
-                                findOrderQuantity(contract,model));
-                        setDeleteOrders(contract,salesman_number,seq);
+                                findOrderQuantity(contract,salesman_number,model));
+                        setDeleteOrders(contract,salesman_number,model);
                         cnt++;
                     }
 
