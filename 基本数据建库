@@ -89,3 +89,32 @@ center(name),
     constraint fk_stockIn_model foreign key (model) references
 model(model)
 );
+
+create view purchase_bill
+as
+select id                        stockID,
+       purchase_price            price,
+       quantity                  quantity,
+       purchase_price * quantity payment,
+       date                      date,
+       model                     model,
+       supply_center             supply_center
+from stockIn s;
+
+create view selling_bill
+as
+select o.id                      orderID,
+       m.unit_price              price,
+       o.quantity                quantity,
+       o.quantity * m.unit_price proceeds,
+       m.model                   model,
+       c.contract_date           date,
+       c.enterprise              client,
+       e.supply_center           supply_center
+from orders o,
+     model m,
+     contract c,
+     enterprise e
+where c.contract = o.contract
+  and o.product_model = m.model
+  and e.name = c.enterprise;
