@@ -10,7 +10,7 @@ Anything outside the "proxool" tag is ignored. -->
         <driver-class>org.postgresql.Driver</driver-class>
         <driver-properties>
             <property name="user" value="postgres"/>
-            <property name="password" value="Lyw1107Ypa"/>
+            <property name="password" value="123456"/>
         </driver-properties>
         <minimum-connection-count>5</minimum-connection-count>
         <maximum-connection-count>100</maximum-connection-count>
