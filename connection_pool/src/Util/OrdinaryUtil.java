@@ -7,7 +7,7 @@ public class OrdinaryUtil extends DBUtil {
     private String host = "localhost";
     private String dbname = "proj_2";
     private String user = "postgres";
-    private String pwd = "Lyw1107Ypa";
+    private String pwd = "123456";
     private String port = "5432";
 
     private OrdinaryUtil() {
