@@ -21,22 +21,24 @@ public class advancedAPI {
                 prop.getProperty("user"), prop.getProperty("password"));
 
 
-        /**
-         * 更新订单完成情况
-         */
-        updateContractType();
+//        /**
+//         * 更新订单完成情况
+//         */
+//        updateContractType();
+//
+//        /**
+//         * 有条件（可选）筛选订单
+//         */
+//        System.out.println(conditionalQuery(0, null, "NotebookAccessoriesA7", 0, 0, "2022-01-04", null));
+//        System.out.println(conditionalQuery(0, null, null, 0, 0, "2022-01-05", null));
+//
+//        /**
+//         * 筛选账单
+//         */
+//        System.out.println(purchaseBillQuery("2012-01-01", null, null, "Eastern China"));
+//        System.out.println(sellingBillQuery("2022-01-01", "2022-02-01", null, null, "Eastern China"));
 
-        /**
-         * 有条件（可选）筛选订单
-         */
-        System.out.println(conditionalQuery(0, null, "NotebookAccessoriesA7", 0, 0, "2022-01-04", null));
-        System.out.println(conditionalQuery(0, null, null, 0, 0, "2022-01-05", null));
-
-        /**
-         * 筛选账单
-         */
-        System.out.println(purchaseBillQuery("2012-01-01", null, null, "Eastern China"));
-        System.out.println(sellingBillQuery("2022-01-01", "2022-02-01", null, null, "Eastern China"));
+        System.out.println(stackQuery(null, "DatabaseSoftwareO6"));
         closeDB();
     }
 
@@ -127,6 +129,49 @@ public class advancedAPI {
             e.printStackTrace();
         }
         return sbResult.toString();
+    }
+
+    public static String stackQuery(String supply_center,
+                                    String model
+    ) {
+        StringBuilder sb1 = new StringBuilder();
+        StringBuilder sb2 = new StringBuilder();
+        String Model = new String();
+        String sc = new String();
+        StringBuilder sbResult = new StringBuilder();
+
+        if (model != null)
+            Model = sb1.append("like ").append("'").append(model).append("'").toString();
+        else
+            Model = "is not null";
+
+        if (supply_center != null)
+            sc = sb2.append("like ").append("'").append(supply_center).append("'").toString();
+        else
+            sc = "is not null";
+
+        String sql = "select supply_center, model, quantity\n" +
+                "from stock s\n" +
+                "where supply_center %s\n" +
+                "and model %s;";
+        try {
+            sql = String.format(sql, sc, Model);
+            Statement preparedStatement = con.createStatement();
+
+            System.out.println(sql);
+            resultSet = preparedStatement.executeQuery(sql);
+
+
+            while (resultSet.next()) {
+                sbResult.append(resultSet.getString("model")).append("\t").
+                        append(resultSet.getString("supply_center")).append("\t").
+                        append(resultSet.getString("quantity")).append("\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sbResult.toString();
+
     }
 
     public static String purchaseBillQuery(String start_date,
