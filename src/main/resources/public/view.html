@@ -1,0 +1,310 @@
+
+<!--//Make reservation form-->
+<!--<h2>Make reservation:</h2>-->
+<!--<form method="post" action="/make-reservation">-->
+<!--    Choose day-->
+<!--    <select name="day">-->
+<!--        <option value="saturday">Saturday</option>-->
+<!--        <option value="sunday">Sunday</option>-->
+<!--    </select>-->
+<!--    <br>-->
+<!--    Choose time-->
+<!--    <select name="time">-->
+<!--        <option value="8:00 PM">8:00 PM</option>-->
+<!--        <option value="9:00 PM">9:00 PM</option>-->
+<!--    </select>-->
+<!--    <br>-->
+<!--    <button>Submit</button>-->
+<!--</form>-->
+
+<!--<h2>Make your Query:</h2>-->
+<!--<form method="post" action="/make-query">-->
+<!--    Choose contractNumber-->
+<!--    <select name="contractNumber">-->
+<!--        <option value="CSE0000101">CSE0000101</option>-->
+<!--        <option value="CSE0000416">CSE0000416</option>-->
+<!--    </select>-->
+<!--    <br>-->
+<!--    <button>Submit</button>-->
+<!--</form>-->
+
+<!--//Check reservation form-->
+<!--<h2>Check your reservation:</h2>-->
+<!--<form method="get" action="/check-reservation">-->
+<!--    Choose day-->
+<!--    <select name="day">-->
+<!--        <option value="saturday">Saturday</option>-->
+<!--        <option value="sunday">Sunday</option>-->
+<!--    </select>-->
+<!--    <br>-->
+<!--    <button>Submit</button>-->
+<!--</form>-->
+
+<!--<h2>Check your Query:</h2>-->
+<!--<form method="get" action="/check-query">-->
+<!--    Choose contractNumber-->
+<!--    <select name="contractNumber">-->
+<!--        <option value="CSE0000101">CSE0000101</option>-->
+<!--        <option value="CSE0000416">CSE0000416</option>-->
+<!--    </select>-->
+<!--    <br>-->
+<!--    <button>Submit</button>-->
+<!--</form>-->
+
+
+<!--<form method="get" action="/send-query">-->
+<!--    Send query-->
+
+<!--    Contract: <input type="text" name="Contract" placeholder="Contract" spellcheck="true"/>-->
+<!--    <br>-->
+<!--    <input type="submit" value="submit"/>-->
+<!--</form>-->
+
+<!--<h1>Upload example</h1>-->
+<!--<form method="post" action="/upload-example" enctype="multipart/form-data">-->
+<!--    <input type="file" name="files" multiple>-->
+<!--    <button>Submit</button>-->
+<!--</form>-->
+
+<!DOCTYPE html>
+<html lang="en">
+<script src="http://code.jquery.com/jquery-latest.js"></script>
+<script>
+$(document).ready(function(){
+	$("button").click(function(){
+		$.get("/try/ajax/demo_test.php",function(data,status){
+			alert("数据: " + data + "\n状态: " + status);
+		});
+	});
+});
+</script>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 1、设置时间60秒刷新一次该页面 -->
+    <meta http-equiv="refresh" content="60">
+
+    <!-- 2、设置指定时间跳转 -->
+<!--    <meta http-equiv="refresh" content="10;url=http://www.baidu.com">-->
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+
+<body>
+<!-- 头部模块 -->
+<header>
+    <h1><span>SUSTC公司可视化界面</span></h1>
+    <p><span>Data visualization page design</span></p>
+</header>
+
+<div class="main">
+    <!-- top5 -->
+    <div class="top5">
+        <div class="top5-title">
+            <span>地区平均库存TOP5</span>
+        </div>
+        <div class="top5-content">
+            <ul>
+                <li>
+                    <div class="cicle"></div>
+                    <div class="li-content">
+                        <span>欧洲</span>
+                        <span>322.8</span>
+                        <span></span>
+                        <span><img src="./images/up.png" ></span>
+                    </div>
+                </li>
+                <li>
+                    <div class="cicle"></div>
+                    <div class="li-content">
+                        <span>中国西南部</span>
+                        <span>313.6</span>
+                        <span></span>
+                        <span><img src="./images/up.png" ></span>
+                    </div>
+                </li>
+                <li>
+                    <div class="cicle"></div>
+                    <div class="li-content">
+                        <span>美国</span>
+                        <span>303.4</span>
+                        <span></span>
+                        <span><img src="./images/up.png" ></span>
+                    </div>
+                </li>
+                <li>
+                    <div class="cicle"></div>
+                    <div class="li-content">
+                        <span>港澳台地区</span>
+                        <span>267.4</span>
+                        <span></span>
+                        <span><img src="./images/up.png" ></span>
+                    </div>
+                </li>
+                <li>
+                    <div class="cicle"></div>
+                    <div class="li-content">
+                        <span>中国南部</span>
+                        <span>234.2</span>
+                        <span></span>
+                        <span><img src="./images/down.png" ></span>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <div class="top5-title">
+            <span>销售排行榜</span>
+        </div>
+    </div>
+    <!-- 销售总额 -->
+    <div class="total">
+        <div class="data1">
+            <span>年销售</span>
+            <p>46432360</p>
+        </div>
+        <div class="data2">
+            <span>月销售</span>
+            <p>10276700</p>
+        </div>
+        <div class="data3">
+            <span>周销售</span>
+            <p>1630330</p>
+        </div>
+        <div class="data4">
+            <span>日销售</span>
+            <p>0</p>
+        </div>
+        <canvas class="rain"></canvas>
+        <canvas class="dashed"></canvas>
+        <div class="sphere">
+            <div class="sphere-bg"></div>
+            <div class="sum">
+                <span>销售总额</span>
+                <p>46432360</p>
+            </div>
+        </div>
+        <div class="cicle3"></div>
+        <div class="cicle4"></div>
+        <div class="cicle5"></div>
+        <div class="cicle6"></div>
+        <div class="cicle7"></div>
+        <div class="cicle8">
+            <span>192</span>
+            <p>Supply Staff</p>
+        </div>
+        <div class="cicle9">
+            <span>8</span>
+            <p>Director</p>
+        </div>
+        <div class="cicle10">
+            <span>160</span>
+            <p>Contracts Manager</p>
+        </div>
+        <div class="cicle11">
+            <span>640</span>
+            <p>Salesman</p>
+        </div>
+    </div>
+    <!-- 会销分析 -->
+    <div class="analyse">
+        <div class="analyse-title">
+            <span>数据查询</span>
+        </div>
+        <ul>
+            <li>
+                <img src="./images/s1.png" >
+                <h5>查看账单</h5><br>
+                <span><form method="get" action="/send-bills">
+                        <input type="text" name="Bills" placeholder="2021-05-01,2022-05-01" spellcheck="true"/>
+                        <input type="submit" value="submit"/>
+                    </form></span><br>
+                <em>￥46432360</em>
+            </li>
+            <li>
+                <img src="./images/s2.png" >
+                <h5>SUSTC基本信息</h5><br>
+                <span><form method="get" action="/send-origin">
+                <input type="text" name="Origin" placeholder="Origin-id" spellcheck="true"/>
+                <input type="submit" value="submit"/>
+                    </form></span><br>
+                <em>￥46432360</em>
+            </li>
+            <li>
+                <img src="./images/s3.png" >
+                <h5>订单和存货信息</h5><br>
+                <span><form method="get" action="/send-S&O">
+                        <input type="text" name="Stock&Order" placeholder="CSE" spellcheck="true"/>
+                        <input type="submit" value="submit"/>
+                    </form></span><br>
+                <em>￥46432360</em>
+            </li>
+
+        </ul>
+        <div class="execution">
+            <div class="title">完成情况</div>
+            <div class="cicle1"></div>
+            <div class="cicle2"></div>
+            <div class="waterChart1">
+                <div class="chart-title">会销完成率</div>
+                <div class="chart1"></div>
+            </div>
+            <div class="waterChart2">
+                <div class="chart-title">会销占比</div>
+                <div class="chart2"></div>
+            </div>
+        </div>
+    </div>
+    <!-- 鞋服配销售分析 -->
+    <div class="sale">
+        <ul>
+            <li>
+                <div class="showImg">
+                    <img src="./images/shoe.png" >
+                </div>
+                <div class="data">
+                    <span>WirelessSecurity90</span>
+                    <span>1762</span>
+                </div>
+                <div class="shoeChart"></div>
+            </li>
+            <li>
+                <div class="showImg">
+                    <img src="./images/clothes.png" >
+                </div>
+                <div class="data">
+                    <span>CasetteLibraryI1</span>
+                    <span>1403</span>
+                </div>
+                <div class="clothesChart"></div>
+            </li>
+            <li>
+                <div class="showImg">
+                    <img src="./images/mz.png" >
+                </div>
+                <div class="data">
+                    <span>VideoServer62</span>
+                    <span>1309</span>
+                </div>
+                <div class="mzChart"></div>
+            </li>
+        </ul>
+    </div>
+    <!-- 折线图 -->
+    <div class="lineChart">
+
+    </div>
+</div>
+
+<!-- 底部模块 -->
+<div class="bottom">
+    <h5><span>数据状况</span></h5>
+    <p>Data Status</p>
+</div>
+</body>
+<script src="./js/jquery-1.11.0.min.js"></script>
+<script src="./js/echarts.min.js"></script>
+<script src="./node_modules/echarts-liquidfill/dist/echarts-liquidfill.min.js"></script>
+<script src="./js/main.js"></script>
+
+</html>

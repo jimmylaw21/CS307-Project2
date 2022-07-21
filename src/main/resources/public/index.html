@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<script src="http://code.jquery.com/jquery-latest.js"></script>
+<script>
+			function checkUser(){
+				var username = document.getElementById("username").value;//文本框中的值，var是各种变量类型的集合
+				if(username == ""){
+					document.getElementById("tishiUsername").innerHTML ="用户名不能为空";
+					return;//必须要写return跳出
+				}else{
+					document.getElementById("tishiUsername").innerHTML ="";
+				}
+
+				var pwd = document.getElementById("pwd").value;
+				if(pwd == ""){
+					document.getElementById("tishiPwd").innerHTML ="密码不能为空";
+					return;
+				}else{
+					document.getElementById("tishiPwd").innerHTML ="";
+					var reg = /^[0-9]{6}$/;
+					if(!reg.test(pwd)){
+						document.getElementById("tishiPwd").innerHTML ="密码只能为6位数字";
+						return;
+					}
+				}
+
+				window.location.href="view.html";//全部通过则定位至链接
+			}
+		</script>
+<!--————————————————-->
+<!--版权声明：本文为CSDN博主「Yuyao_Xu」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。-->
+<!--原文链接：https://blog.csdn.net/Yuyao_Xu/article/details/100025014-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+    body {
+      background: url('https://cdn.pixabay.com/photo/2018/08/14/13/23/ocean-3605547_1280.jpg') no-repeat;
+      background-size: 100% 130%;
+    }
+
+    #login_box {
+      width: 20%;
+      height: 400px;
+      background-color: #00000060;
+      margin: auto;
+      margin-top: 10%;
+      text-align: center;
+      border-radius: 10px;
+      padding: 50px 50px;
+    }
+
+    h2 {
+      color: #ffffff90;
+      margin-top: 5%;
+    }
+
+    #input-box {
+      margin-top: 5%;
+    }
+
+    span {
+      color: #fff;
+    }
+
+    input {
+      border: 0;
+      width: 60%;
+      font-size: 15px;
+      color: #fff;
+      background: transparent;
+      border-bottom: 2px solid #fff;
+      padding: 5px 10px;
+      outline: none;
+      margin-top: 10px;
+    }
+
+    button {
+      margin-top: 50px;
+      width: 60%;
+      height: 30px;
+      border-radius: 10px;
+      border: 0;
+      color: #fff;
+      text-align: center;
+      line-height: 30px;
+      font-size: 15px;
+      background-image: linear-gradient(to right, #30cfd0, #330867);
+    }
+
+    #sign_up {
+      margin-top: 45%;
+      margin-left: 60%;
+    }
+
+    a {
+      color: #b94648;
+    }
+  </style>
+
+
+</head>
+
+<body>
+<div id="login_box">
+    <h2>LOGIN</h2>
+    <div id="input_box">
+        <input type="text" id="username" placeholder="请输入用户名">
+        <span>*</span>
+        <span id="tishiUsername"></span>
+    </div>
+    <div class="input_box">
+        <input type="password" name="password" id="pwd" placeholder="请输入密码">
+        <span>*</span>
+        <span id="tishiPwd"></span>
+    </div>
+    <div class="left nav">
+    </div>
+<!--    <button>登录</button><br>-->
+    <input type="submit" value="登录" onclick="checkUser()">
+</div>
+</body>
+</html>
+
+<!--<html>-->
+<!--<head>-->
+<!--    <title>-->
+<!--        用户登录界面-->
+<!--    </title>-->
+<!--    <meta charset="utf-8">-->
+<!--    <script>-->
+<!--			function checkUser(){-->
+<!--				var username = document.getElementById("username").value;//文本框中的值，var是各种变量类型的集合-->
+<!--				if(username == ""){-->
+<!--					document.getElementById("tishiUsername").innerHTML ="用户名不能为空";-->
+<!--					return;//必须要写return跳出-->
+<!--				}else{-->
+<!--					document.getElementById("tishiUsername").innerHTML ="";-->
+<!--				}-->
+
+<!--				var pwd = document.getElementById("pwd").value;-->
+<!--				if(pwd == ""){-->
+<!--					document.getElementById("tishiPwd").innerHTML ="密码不能为空";-->
+<!--					return;-->
+<!--				}else{-->
+<!--					document.getElementById("tishiPwd").innerHTML ="";-->
+<!--					var reg = /^[0-9]{6}$/;-->
+<!--					if(!reg.test(pwd)){-->
+<!--						document.getElementById("tishiPwd").innerHTML ="密码只能为6位数字";-->
+<!--						return;-->
+<!--					}-->
+<!--				}-->
+
+<!--				window.location.href="view.html";//全部通过则定位至链接-->
+<!--			}-->
+<!--		</script>-->
+<!--    <style>-->
+<!--			&lt;!&ndash;span常用来修饰单独字符&ndash;&gt;-->
+<!--			span{-->
+<!--				color:red;-->
+<!--			}-->
+<!--		</style>-->
+<!--</head>-->
+<!--<body>-->
+
+<!--&lt;!&ndash;-->
+<!--    用户名，密码，重复密码不可为空-->
+<!--    密码重复密码相同-->
+<!--    密码为六位-->
+<!--    邮箱有@-->
+<!--    条件全满足则跳转-->
+<!--&ndash;&gt;-->
+
+<!--<form action="javascript01.html" method="get" align="center" onsubmit="return false">-->
+<!--    <p>-->
+<!--        账号：-->
+<!--        <input name="username" id="username">-->
+<!--        <span>*</span>-->
+<!--        <span id="tishiUsername"></span>-->
+<!--    </p>-->
+<!--    <p>-->
+<!--        密码：<input type="password" name="password" id="pwd">-->
+<!--        <span>*</span>-->
+<!--        <span id="tishiPwd"></span>-->
+<!--    </p>-->
+
+<!--    <p><input type="submit" value="登录" onclick="checkUser()"></p>-->
+
+<!--</form>-->
+
+
+<!--</body>-->
+
+<!--</html>-->
+
